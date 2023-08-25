@@ -42,30 +42,50 @@
                 <img src="product1.jpg" alt="Product 1">
                 <div class="name">Product 1</div>
                 <div class="variants">
-                    <button>Variant 1</button>
-                    <button>Variant 2</button>
-                    <button>Variant 3</button>
+                    <button on:click={() => addToCart('Product 1 - Variant 1')}>Variant 1</button>
+                    <button on:click={() => addToCart('Product 1 - Variant 2')}>Variant 2</button>
+                    <button on:click={() => addToCart('Product 1 - Variant 3')}>Variant 3</button>
                 </div>
             </div>
             <div class="product">
                 <img src="product2.jpg" alt="Product 2">
                 <div class="name">Product 2</div>
                 <div class="variants">
-                    <button>Variant 1</button>
-                    <button>Variant 2</button>
-                    <button>Variant 3</button>
+                    <button on:click={() => addToCart('Product 2 - Variant 1')}>Variant 1</button>
+                    <button on:click={() => addToCart('Product 2 - Variant 2')}>Variant 2</button>
+                    <button on:click={() => addToCart('Product 2 - Variant 3')}>Variant 3</button>
                 </div>
             </div>
             <!-- Add more products here -->
         </div>
         <div class="cart">
             <h2>Shopping Cart</h2>
-            <div class="item">
-                <div class="name">Product 1 - Variant 1</div>
-                <div class="quantity">1</div>
-            </div>
-            <!-- Add more items here -->
+            {#each cartItems as item}
+                <div class="item">
+                    <div class="name">{item.name}</div>
+                    <div class="quantity">{item.quantity}</div>
+                </div>
+            {/each}
         </div>
     </div>
+
+    <script>
+        import { onMount } from 'svelte';
+
+        let cartItems = [];
+
+        function addToCart(variant) {
+            const existingItem = cartItems.find(item => item.name === variant);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cartItems.push({ name: variant, quantity: 1 });
+            }
+        }
+
+        onMount(() => {
+            console.log('Svelte app is mounted');
+        });
+    </script>
 </body>
 </html>
