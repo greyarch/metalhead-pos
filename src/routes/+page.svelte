@@ -50,10 +50,5 @@
 
 	<div class="w-96 border-l pl-4">
 		<ShoppingCart />
-		<div class="flex justify-between border-t pt-4 mt-4">
-			<button class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">В брой</button>
-			<button class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">С карта</button>
-			<button class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">Каса</button>
-		</div>
 	</div>
 </div>
