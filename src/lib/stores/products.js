@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
 const products = writable({
-	Наливно: [
+	Бира: [
 		{
 			name: 'Wrong Side of Heaven',
 			variants: [
@@ -20,19 +20,39 @@ const products = writable({
 			]
 		},
 		{
-			name: 'Metalworks: Decoction Helles',
+			name: 'Metalworks: Pale Ale, Dragon & Lotus',
 			variants: [
 				{
 					variant: '0.33L',
-					price: 5
-				},
-				{
-					variant: '0.50L',
 					price: 6
 				},
 				{
+					variant: '0.50L',
+					price: 7
+				},
+				{
 					variant: '1.0L',
-					price: 11
+					price: 13
+				}
+			]
+		}
+	],
+	Коктейли: [
+		{
+			name: 'Gin & Tonic',
+			variants: [
+				{
+					variant: '',
+					price: 6
+				}
+			]
+		},
+		{
+			name: 'Mojito',
+			variants: [
+				{
+					variant: '',
+					price: 6
 				}
 			]
 		}
