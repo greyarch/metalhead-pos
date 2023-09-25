@@ -8,7 +8,12 @@
 	}
 </script>
 
-<h2 class="text-2xl font-semibold mb-2">Сметка</h2>
+<h2 class="text-2xl font-semibold mb-2">Сметка
+	<button
+		class="mr-1 p-1 text-lg rounded-md border border-gray-300 hover:bg-gray-100 float-right"
+		on:click={cart.reset}>X
+	</button>
+</h2>
 <hr class="pb-4" />
 
 <!-- Cart Items -->
