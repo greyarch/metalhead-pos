@@ -21,11 +21,8 @@
 				console.log(errorCode, errorMessage);
 
 				error = true;
-				console.log('error---', error)
 			});
 	};
-
-	$: console.log('error', error)
 
 	let error = false;
 	let email = '';
