@@ -37,11 +37,13 @@
 <div class={inOperation ? 'opacity-50 pointer-events-none' : ''}>
 	<h2 class="text-2xl font-semibold mb-2">
 		Сметка
-		<button
-			class="mr-1 p-1 text-lg rounded-md border border-gray-300 hover:bg-gray-100 float-right"
-			on:click={cart.reset}
-			>X
-		</button>
+		{#if $cart.items.length}
+			<button
+				class="mr-1 p-1 text-lg rounded-md border border-gray-300 hover:bg-gray-100 float-right"
+				on:click={cart.reset}
+				>X
+			</button>
+		{/if}
 	</h2>
 	<hr class="pb-4" />
 
