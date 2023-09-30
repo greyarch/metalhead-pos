@@ -1,14 +1,14 @@
 <script>
 	import CategorySidebar from '$lib/components/CategorySidebar.svelte';
-	import ShoppingCart from '../lib/components/ShoppingCart.svelte';
+	import Cart from '../lib/components/Cart.svelte';
 	import cart from '$lib/stores/cart.js';
 	import products from '$lib/stores/products.js';
 	import Check from '$lib/icons/Check.svelte';
 	import Xmark from '$lib/icons/X.svelte';
 	import Cog from '$lib/icons/Cog.svelte';
 
-	$: selectedCategory = categories[0] ?? '';
-	$: categories = Object.keys($products) ?? [];
+	let categories = Object.keys($products) ?? [];
+	let selectedCategory = categories[0] ?? '';
 	$: items = $products[selectedCategory] ?? [];
 
 	function addItemToCart(item, variant) {
@@ -25,7 +25,7 @@
 		selectedCategory = e.detail.category;
 	}
 
-	let editMode = true;
+	let editMode = false;
 </script>
 
 <div class="w-full p-8 flex">
@@ -83,6 +83,6 @@
 	</div>
 
 	<div class="w-96 border-l pl-4">
-		<ShoppingCart />
+		<Cart />
 	</div>
 </div>
