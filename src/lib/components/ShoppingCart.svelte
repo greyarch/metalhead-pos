@@ -3,6 +3,7 @@
 	import { authUser } from '$lib/stores/auth.js';
 	import { db } from '$lib/firebase.js';
 	import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+	import Trash from '$lib/icons/Trash.svelte';
 
 	function removeVariantFromCart(item) {
 		return () => {
@@ -38,10 +39,8 @@
 	<h2 class="text-2xl font-semibold mb-2">
 		Сметка
 		{#if $cart.items.length}
-			<button
-				class="mr-1 p-1 text-lg rounded-md border border-gray-300 hover:bg-gray-100 float-right"
-				on:click={cart.reset}
-				>X
+			<button class="float-right" on:click={cart.reset}>
+				<Trash />
 			</button>
 		{/if}
 	</h2>
@@ -49,16 +48,15 @@
 
 	<!-- Cart Items -->
 	{#each $cart.items as cartItem}
-		<div class="mb-4">
+		<div>
 			<div class="flex justify-between">
 				<span class="font-medium">
-					<button
-						class="mr-1 p-1 rounded-md border border-gray-300 hover:bg-gray-100"
-						on:click={removeVariantFromCart(cartItem)}
-					>
-						X
+					<button class="text-red-400" on:click={removeVariantFromCart(cartItem)}>
+						<Trash />
 					</button>
-					{cartItem.name}{cartItem.variant ? ` (${cartItem.variant})` : ''}
+					<span>
+						{cartItem.name}{cartItem.variant ? ` (${cartItem.variant})` : ''}
+					</span>
 				</span>
 				<span>x{cartItem.quantity}</span>
 			</div>
