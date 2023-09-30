@@ -22,7 +22,7 @@ const products = readable({
 		},
 		{
 			name: 'Metalworks: Pale Ale, Dragon & Lotus',
-			active: false,
+			active: true,
 			variants: [
 				{
 					variant: '0.33L',
@@ -42,6 +42,7 @@ const products = readable({
 	Коктейли: [
 		{
 			name: 'Gin & Tonic',
+			active: true,
 			variants: [
 				{
 					variant: '',
@@ -51,6 +52,7 @@ const products = readable({
 		},
 		{
 			name: 'Mojito',
+			active: true,
 			variants: [
 				{
 					variant: '',
@@ -62,6 +64,7 @@ const products = readable({
 	Храни: [
 		{
 			name: 'Начос',
+			active: true,
 			variants: [
 				{
 					variant: '',
@@ -73,6 +76,7 @@ const products = readable({
 	Мърч: [
 		{
 			name: 'Брандирана чаша',
+			active: true,
 			variants: [
 				{
 					variant: '0.33L',
@@ -86,6 +90,7 @@ const products = readable({
 		},
 		{
 			name: 'T-shirt',
+			active: true,
 			variants: [
 				{
 					variant: '',
