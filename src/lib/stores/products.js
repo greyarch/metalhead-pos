@@ -1,9 +1,10 @@
-import { writable } from 'svelte/store';
+import { readable } from 'svelte/store';
 
-const products = writable({
+const products = readable({
 	Бира: [
 		{
 			name: 'Wrong Side of Heaven',
+			active: true,
 			variants: [
 				{
 					variant: '0.33L',
@@ -21,6 +22,7 @@ const products = writable({
 		},
 		{
 			name: 'Metalworks: Pale Ale, Dragon & Lotus',
+			active: false,
 			variants: [
 				{
 					variant: '0.33L',
