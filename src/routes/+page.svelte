@@ -37,13 +37,13 @@
 		<h2 class="text-2xl mb-2 font-semibold">
 			{selectedCategory}
 			{#if editMode}
-				<button
+				<!-- <button
 					class="mr-1 p-1 text-lg rounded-md border border-red-300 hover:bg-red-100 float-right"
 					on:click={() => (editMode = false)}
 					><Xmark />
-				</button>
+				</button> -->
 				<button
-					class="mr-5 p-1 text-lg rounded-md border border-green-300 hover:bg-green-100 float-right"
+					class="mr-1 p-1 text-lg rounded-md border border-green-300 hover:bg-green-100 float-right"
 					on:click={() => (editMode = false)}
 					><Check />
 				</button>
