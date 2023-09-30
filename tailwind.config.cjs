@@ -11,5 +11,7 @@ module.exports = {
 	theme: {
 		extend: {}
 	},
-	plugins: [...skeleton()]
+	plugins: [...skeleton({
+		themes: { preset: [ "wintry" ] }
+	})]
 };
