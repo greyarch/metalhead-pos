@@ -16,7 +16,6 @@
 
 	function submitOrder(orderType) {
 		return async () => {
-			console.log('submitOrder::cart', $cart);
 			busy = true;
 			const order = await db
 				.from('orders')

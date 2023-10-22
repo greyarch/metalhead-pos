@@ -1,6 +1,7 @@
 <script>
 	import CategorySidebar from '$lib/components/CategorySidebar.svelte';
-	import Cart from '../lib/components/Cart.svelte';
+	import Cart from '$lib/components/Cart.svelte';
+	import Item from '$lib/components/Item.svelte';
 	import cart from '$lib/stores/cart.js';
 	import Check from '$lib/icons/Check.svelte';
 	// import Xmark from '$lib/icons/X.svelte';
@@ -12,16 +13,26 @@
 	let categories = [];
 	let selectedCategory = '';
 
+	const sortByName = (a, b) => {
+		const nameA = a.name.toUpperCase();
+		const nameB = b.name.toUpperCase();
+		if (nameA < nameB) {
+			return -1;
+		}
+		if (nameA > nameB) {
+			return 1;
+		}
+		return 0;
+	};
+
 	$page.data.supabase
 		?.from('products_variants')
 		.select('price, products ( id, name, categories ( id, name ) ), variants ( id, name )')
 		.then(({ data }) => {
-			// console.log(JSON.stringify(data, null, 2));
 			for (const { price, products, variants } of data) {
 				const cat = products.categories.name;
 				const id = products.id;
 				const name = products.name;
-				// console.log(cat, id, name, variants, price);
 				if (!prdts[cat]) prdts[cat] = [];
 				const existingProduct = prdts[cat].find((p) => p.name === name);
 				if (existingProduct) {
@@ -35,19 +46,14 @@
 					});
 				}
 			}
-			// console.log(JSON.stringify(prdts, null, 2));
 			categories = Object.keys(prdts);
 			selectedCategory = categories[0];
-			// items = products[categories[0]];
 		});
 
-	$: console.log($cart);
-	$: items = prdts[selectedCategory] ?? [];
-	// $: console.log(selectedCategory, items);
+	$: items = (prdts[selectedCategory] ?? []).sort(sortByName);
 
 	function addItemToCart(item, variant) {
 		return () => {
-			console.log('addItemToCart', item, variant);
 			cart.add({
 				id: item.id,
 				name: item.name,
@@ -106,27 +112,7 @@
 						</label>
 					</div>
 				{:else if item.active}
-					{#if item.variants?.length > 1}
-						<h2 class="text-xl mb-2 font-semibold">{item.name}</h2>
-						<div>
-							{#each item.variants as variant}
-								<button
-									class="mr-2 p-1 rounded-md border border-gray-300 hover:bg-gray-100"
-									on:click={addItemToCart(item, variant)}
-								>
-									{variant.name !== 'default' ? `${variant.name} - ` : ''}{variant.price} лв.
-								</button>
-							{/each}
-						</div>
-					{:else}
-						<button
-							class="text-xl font-semibold mr-2 p-1 rounded-md border border-gray-300 hover:bg-gray-100"
-							on:click={addItemToCart(item, item.variants[0])}
-						>
-							{item.name} - {item.variants[0].price} лв.
-						</button>
-					{/if}
-					<hr class="mt-2" />
+					<Item {item} handleClick={addItemToCart} />
 				{/if}
 			</div>
 		{/each}
