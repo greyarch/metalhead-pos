@@ -1,9 +1,10 @@
 <script>
 	import cart from '$lib/stores/cart.js';
-	import { authUser } from '$lib/stores/auth.js';
-	import { db } from '$lib/firebase.js';
-	import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 	import Trash from '$lib/icons/Trash.svelte';
+	import { page } from '$app/stores';
+
+	const db = $page.data.supabase;
+	const session = $page.data.session;
 
 	function removeVariantFromCart(item) {
 		return () => {
@@ -11,31 +12,38 @@
 		};
 	}
 
-	let inOperation = false;
+	let busy = false;
 
-	function payOrder(orderType) {
-		return () => {
-			inOperation = true;
-			addDoc(collection(db, 'orders'), {
-				...$cart,
-				createdAt: serverTimestamp(),
-				createdBy: $authUser.email,
-				payment: orderType
-			})
-				.then((docRef) => {
-					inOperation = false;
-					console.log('Order written with ID:', docRef.id);
-					cart.reset();
-				})
-				.catch((error) => {
-					inOperation = false;
-					console.error('Error adding order:', error);
-				});
+	function submitOrder(orderType) {
+		return async () => {
+			console.log('submitOrder::cart', $cart);
+			busy = true;
+			const order = await db
+				.from('orders')
+				.insert([
+					{
+						total_price: $cart.total,
+						payment_type: orderType,
+						created_by: session.user.id
+					}
+				])
+				.select('id');
+			await db.from('order_items').insert(
+				$cart.items.map((item) => ({
+					order_id: order.data[0].id,
+					product_id: item.id,
+					variant_id: item.variant.id,
+					quantity: item.quantity,
+					unit_price: item.variant.price
+				}))
+			);
+			cart.reset();
+			busy = false;
 		};
 	}
 </script>
 
-<div class={inOperation ? 'opacity-50 pointer-events-none' : ''}>
+<div class={busy ? 'opacity-50 pointer-events-none' : ''}>
 	<h2 class="text-2xl font-semibold mb-2">
 		Сметка
 		{#if $cart.items.length}
@@ -55,12 +63,14 @@
 						<Trash />
 					</button>
 					<span>
-						{cartItem.name}{cartItem.variant ? ` (${cartItem.variant})` : ''}
+						{cartItem.name}{cartItem.variant.name !== 'default'
+							? ` (${cartItem.variant.name})`
+							: ''}
 					</span>
 				</span>
 				<span>x{cartItem.quantity}</span>
 			</div>
-			<div class="text-right text-gray-400">{cartItem.price * cartItem.quantity} лв.</div>
+			<div class="text-right text-gray-400">{cartItem.variant.price * cartItem.quantity} лв.</div>
 		</div>
 	{/each}
 
@@ -75,15 +85,15 @@
 	{#if $cart.items.length}
 		<div class="flex justify-between border-t pt-4 mt-4">
 			<button
-				on:click={payOrder('cash')}
+				on:click={submitOrder('cash')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">В брой</button
 			>
 			<button
-				on:click={payOrder('card')}
+				on:click={submitOrder('card')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">С карта</button
 			>
 			<button
-				on:click={payOrder('register')}
+				on:click={submitOrder('register')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">Каса</button
 			>
 		</div>

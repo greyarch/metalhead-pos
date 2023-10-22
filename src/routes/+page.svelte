@@ -2,21 +2,57 @@
 	import CategorySidebar from '$lib/components/CategorySidebar.svelte';
 	import Cart from '../lib/components/Cart.svelte';
 	import cart from '$lib/stores/cart.js';
-	import products from '$lib/stores/products.js';
 	import Check from '$lib/icons/Check.svelte';
-	import Xmark from '$lib/icons/X.svelte';
+	// import Xmark from '$lib/icons/X.svelte';
 	import Cog from '$lib/icons/Cog.svelte';
+	import { page } from '$app/stores';
 
-	let categories = Object.keys($products) ?? [];
-	let selectedCategory = categories[0] ?? '';
-	$: items = $products[selectedCategory] ?? [];
+	let prdts = {};
+
+	let categories = [];
+	let selectedCategory = '';
+
+	$page.data.supabase
+		?.from('products_variants')
+		.select('price, products ( id, name, categories ( id, name ) ), variants ( id, name )')
+		.then(({ data }) => {
+			// console.log(JSON.stringify(data, null, 2));
+			for (const { price, products, variants } of data) {
+				const cat = products.categories.name;
+				const id = products.id;
+				const name = products.name;
+				// console.log(cat, id, name, variants, price);
+				if (!prdts[cat]) prdts[cat] = [];
+				const existingProduct = prdts[cat].find((p) => p.name === name);
+				if (existingProduct) {
+					existingProduct.variants.push({ id: variants.id, name: variants.name, price });
+				} else {
+					prdts[cat].push({
+						id,
+						name,
+						variants: [{ id: variants.id, name: variants.name, price }],
+						active: true
+					});
+				}
+			}
+			// console.log(JSON.stringify(prdts, null, 2));
+			categories = Object.keys(prdts);
+			selectedCategory = categories[0];
+			// items = products[categories[0]];
+		});
+
+	$: console.log($cart);
+	$: items = prdts[selectedCategory] ?? [];
+	// $: console.log(selectedCategory, items);
 
 	function addItemToCart(item, variant) {
 		return () => {
+			console.log('addItemToCart', item, variant);
 			cart.add({
+				id: item.id,
 				name: item.name,
 				quantity: 1,
-				...variant
+				variant
 			});
 		};
 	}
@@ -70,7 +106,7 @@
 						</label>
 					</div>
 				{:else if item.active}
-					{#if item.variants.length > 1}
+					{#if item.variants?.length > 1}
 						<h2 class="text-xl mb-2 font-semibold">{item.name}</h2>
 						<div>
 							{#each item.variants as variant}
@@ -78,7 +114,7 @@
 									class="mr-2 p-1 rounded-md border border-gray-300 hover:bg-gray-100"
 									on:click={addItemToCart(item, variant)}
 								>
-									{variant.variant ? `${variant.variant} - ` : ''}{variant.price} лв.
+									{variant.name !== 'default' ? `${variant.name} - ` : ''}{variant.price} лв.
 								</button>
 							{/each}
 						</div>

@@ -1,5 +1,5 @@
 {
-	"name": "",
+	"name": "metalhead-brewery-pos-system",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
@@ -27,7 +27,8 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@sveltejs/adapter-vercel": "^3.0.3",
-		"firebase": "^10.4.0"
+		"@supabase/auth-helpers-sveltekit": "^0.10.3",
+		"@supabase/supabase-js": "^2.38.2",
+		"@sveltejs/adapter-vercel": "^3.0.3"
 	}
 }
