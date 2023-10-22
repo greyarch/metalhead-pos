@@ -1,9 +1,99 @@
 import { readable } from 'svelte/store';
 
 const products = readable({
-	Бира: [
+	Наливно: [
+		{
+			name: 'Metalingus',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 5
+				},
+				{
+					variant: '0.50L',
+					price: 6
+				},
+				{
+					variant: '1.0L',
+					price: 11
+				}
+			]
+		},
 		{
 			name: 'Wrong Side of Heaven',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 6.5
+				},
+				{
+					variant: '0.50L',
+					price: 7.5
+				},
+				{
+					variant: '1.0L',
+					price: 14
+				}
+			]
+		},
+		{
+			name: 'Hot Smoke and Heavy Blues',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 6.5
+				},
+				{
+					variant: '0.50L',
+					price: 7.5
+				},
+				{
+					variant: '1.0L',
+					price: 14
+				}
+			]
+		},
+		{
+			name: 'Sweet Stout of Mine',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 6.5
+				},
+				{
+					variant: '0.50L',
+					price: 7.5
+				},
+				{
+					variant: '1.0L',
+					price: 14
+				}
+			]
+		},
+		{
+			name: 'River Runs Red',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 6.5
+				},
+				{
+					variant: '0.50L',
+					price: 7.5
+				},
+				{
+					variant: '1.0L',
+					price: 14
+				}
+			]
+		},
+		{
+			name: 'Metalworks: Farmhouse Ale',
 			active: true,
 			variants: [
 				{
@@ -21,22 +111,81 @@ const products = readable({
 			]
 		},
 		{
-			name: 'Metalworks: Pale Ale, Dragon & Lotus',
+			name: 'Metalworks: DDH Galacy, El Dorado & Phantasm',
 			active: true,
 			variants: [
 				{
 					variant: '0.33L',
-					price: 6
-				},
-				{
-					variant: '0.50L',
 					price: 7
 				},
 				{
+					variant: '0.50L',
+					price: 8
+				},
+				{
 					variant: '1.0L',
-					price: 13
+					price: 15
 				}
 			]
+		},
+		{
+			name: 'Metalworks: Kolschish',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 5
+				},
+				{
+					variant: '0.50L',
+					price: 6
+				},
+				{
+					variant: '1.0L',
+					price: 11
+				}
+			]
+		},
+		{
+			name: 'Metalworks: Helles',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 5
+				},
+				{
+					variant: '0.50L',
+					price: 6
+				},
+				{
+					variant: '1.0L',
+					price: 11
+				}
+			]
+		},
+		{
+			name: 'Metalworks: Sour Classic Cola',
+			active: true,
+			variants: [
+				{
+					variant: '0.33L',
+					price: 6.5
+				},
+				{
+					variant: '0.50L',
+					price: 7.5
+				},
+				{
+					variant: '1.0L',
+					price: 14
+				}
+			]
+		},
+		{
+			name: 'Тестер',
+			active: true,
+			price: 14
 		}
 	],
 	Коктейли: [
