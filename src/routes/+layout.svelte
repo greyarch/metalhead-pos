@@ -34,7 +34,6 @@
 	<!-- <svelte:fragment slot="header">Header</svelte:fragment> -->
 	<!-- <svelte:fragment slot="sidebarLeft">Sidebar Left</svelte:fragment> -->
 	<!-- (sidebarRight) -->
-	<!-- (pageHeader) -->
 	<!-- Router Slot -->
 	{#if session}
 		<slot />

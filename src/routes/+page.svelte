@@ -70,8 +70,8 @@
 	let editMode = false;
 </script>
 
-<div class="w-full p-8 flex">
-	<div class="w-32 mr-4 border-r pr-3">
+<div class="w-full p-2 flex">
+	<div class="w-32 mr-4 border-r pr-2 pt-4">
 		<CategorySidebar {categories} {selectedCategory} on:select={selectCategory} />
 	</div>
 
