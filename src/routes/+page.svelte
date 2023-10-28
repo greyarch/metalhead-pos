@@ -5,8 +5,8 @@
 	import IconButton from '$lib/components/IconButton.svelte';
 	import cart from '$lib/stores/cart.js';
 	import Check from '$lib/icons/Check.svelte';
-	// import Xmark from '$lib/icons/X.svelte';
 	import Cog from '$lib/icons/Cog.svelte';
+	// import Xmark from '$lib/icons/X.svelte';
 	// import Plus from '$lib/icons/Plus.svelte';
 
 	import { page } from '$app/stores';
@@ -87,7 +87,7 @@
 
 	<div class="flex-1 mr-4">
 		<h2 class="text-2xl mb-2 font-semibold">
-			{selectedCategory}
+			<span class="text-orange-300">{selectedCategory}</span>
 			{#if editMode}
 				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><Xmark /></IconButton> -->
 				<!-- <IconButton on:click={addItem}><Plus /></IconButton> -->

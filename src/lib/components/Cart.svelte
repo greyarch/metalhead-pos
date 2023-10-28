@@ -44,7 +44,7 @@
 
 <div class={busy ? 'opacity-50 pointer-events-none' : ''}>
 	<h2 class="text-2xl font-semibold mb-2">
-		Сметка
+		<span class="text-orange-300">Сметка</span>
 		{#if $cart.items.length}
 			<button class="float-right" on:click={cart.reset}>
 				<Trash />
