@@ -63,7 +63,6 @@
 			});
 	}
 
-	$: console.log(prdts);
 	$: items = (prdts[selectedCategory] ?? []).sort(sortByName);
 
 	function addItemToCart(item, variant) {
