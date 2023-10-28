@@ -32,7 +32,9 @@
 	function loadProducts() {
 		$page.data.supabase
 			?.from('products_variants')
-			.select('price, products ( id, name, categories ( id, name ) ), variants ( id, name )')
+			.select(
+				'price, products ( id, name, active, categories ( id, name ) ), variants ( id, name )'
+			)
 			.then(({ data }) => {
 				for (const { price, products, variants } of data) {
 					const cat = products.categories.name;
@@ -41,13 +43,18 @@
 					if (!prdts[cat]) prdts[cat] = [];
 					const existingProduct = prdts[cat].find((p) => p.name === name);
 					if (existingProduct) {
-						existingProduct.variants.push({ id: variants.id, name: variants.name, price });
+						existingProduct.variants.push({
+							id: variants.id,
+							name: variants.name,
+							price,
+							active: products.active
+						});
 					} else {
 						prdts[cat].push({
 							id,
 							name,
 							variants: [{ id: variants.id, name: variants.name, price }],
-							active: true
+							active: products.active
 						});
 					}
 				}
@@ -56,6 +63,7 @@
 			});
 	}
 
+	$: console.log(prdts);
 	$: items = (prdts[selectedCategory] ?? []).sort(sortByName);
 
 	function addItemToCart(item, variant) {
