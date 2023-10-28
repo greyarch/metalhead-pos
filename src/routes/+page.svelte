@@ -98,7 +98,9 @@
 			{#if editMode}
 				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><Xmark /></IconButton> -->
 				<!-- <IconButton on:click={addItem}><Plus /></IconButton> -->
-				<IconButton on:click={() => (editMode = false)}><Check /></IconButton>
+				<IconButton on:click={() => (editMode = false)} class="border-green-300"
+					><Check /></IconButton
+				>
 			{:else}
 				<IconButton on:click={() => (editMode = true)}><Cog /></IconButton>
 			{/if}
