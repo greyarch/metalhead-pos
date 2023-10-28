@@ -2,11 +2,15 @@
 	import CategorySidebar from '$lib/components/CategorySidebar.svelte';
 	import Cart from '$lib/components/Cart.svelte';
 	import Item from '$lib/components/Item.svelte';
+	import IconButton from '$lib/components/IconButton.svelte';
 	import cart from '$lib/stores/cart.js';
 	import Check from '$lib/icons/Check.svelte';
 	// import Xmark from '$lib/icons/X.svelte';
 	import Cog from '$lib/icons/Cog.svelte';
+	// import Plus from '$lib/icons/Plus.svelte';
+
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 
 	let prdts = {};
 
@@ -25,30 +29,32 @@
 		return 0;
 	};
 
-	$page.data.supabase
-		?.from('products_variants')
-		.select('price, products ( id, name, categories ( id, name ) ), variants ( id, name )')
-		.then(({ data }) => {
-			for (const { price, products, variants } of data) {
-				const cat = products.categories.name;
-				const id = products.id;
-				const name = products.name;
-				if (!prdts[cat]) prdts[cat] = [];
-				const existingProduct = prdts[cat].find((p) => p.name === name);
-				if (existingProduct) {
-					existingProduct.variants.push({ id: variants.id, name: variants.name, price });
-				} else {
-					prdts[cat].push({
-						id,
-						name,
-						variants: [{ id: variants.id, name: variants.name, price }],
-						active: true
-					});
+	function loadProducts() {
+		$page.data.supabase
+			?.from('products_variants')
+			.select('price, products ( id, name, categories ( id, name ) ), variants ( id, name )')
+			.then(({ data }) => {
+				for (const { price, products, variants } of data) {
+					const cat = products.categories.name;
+					const id = products.id;
+					const name = products.name;
+					if (!prdts[cat]) prdts[cat] = [];
+					const existingProduct = prdts[cat].find((p) => p.name === name);
+					if (existingProduct) {
+						existingProduct.variants.push({ id: variants.id, name: variants.name, price });
+					} else {
+						prdts[cat].push({
+							id,
+							name,
+							variants: [{ id: variants.id, name: variants.name, price }],
+							active: true
+						});
+					}
 				}
-			}
-			categories = Object.keys(prdts);
-			selectedCategory = categories[0];
-		});
+				categories = Object.keys(prdts);
+				selectedCategory = categories[0];
+			});
+	}
 
 	$: items = (prdts[selectedCategory] ?? []).sort(sortByName);
 
@@ -68,6 +74,10 @@
 	}
 
 	let editMode = false;
+
+	onMount(() => {
+		loadProducts();
+	});
 </script>
 
 <div class="w-full p-2 flex">
@@ -79,22 +89,11 @@
 		<h2 class="text-2xl mb-2 font-semibold">
 			{selectedCategory}
 			{#if editMode}
-				<!-- <button
-					class="mr-1 p-1 text-lg rounded-md border border-red-300 hover:bg-red-100 float-right"
-					on:click={() => (editMode = false)}
-					><Xmark />
-				</button> -->
-				<button
-					class="mr-1 p-1 text-lg rounded-md border border-green-300 hover:bg-green-100 float-right"
-					on:click={() => (editMode = false)}
-					><Check />
-				</button>
+				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><Xmark /></IconButton> -->
+				<!-- <IconButton on:click={addItem}><Plus /></IconButton> -->
+				<IconButton on:click={() => (editMode = false)}><Check /></IconButton>
 			{:else}
-				<button
-					class="mr-1 p-1 text-lg rounded-md border border-gray-300 hover:bg-gray-100 float-right"
-					on:click={() => (editMode = true)}
-					><Cog />
-				</button>
+				<IconButton on:click={() => (editMode = true)}><Cog /></IconButton>
 			{/if}
 		</h2>
 		<hr class="mb-2" />
