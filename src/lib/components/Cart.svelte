@@ -16,6 +16,7 @@
 	let busy = false;
 
 	function submitOrder(orderType) {
+		let orderId = 0;
 		return async () => {
 			busy = true;
 			try {
@@ -29,7 +30,7 @@
 						}
 					])
 					.select('id');
-				const orderId = order.data[0].id;
+				orderId = order.data[0].id;
 				await db.from('order_items').insert(
 					$cart.items.map((item) => ({
 						order_id: orderId,
@@ -51,6 +52,8 @@
 				cart.reset();
 			} catch (e) {
 				console.error(e);
+				const { error } = await db.from('orders').delete().eq('id', orderId);
+				if (error) console.error(error);
 				alert(`Грешка при изпращане на поръчката!\n\n${e.message}`);
 			}
 			busy = false;
