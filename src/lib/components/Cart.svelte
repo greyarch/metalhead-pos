@@ -2,6 +2,7 @@
 	import cart from '$lib/stores/cart.js';
 	import Trash from '$lib/icons/Trash.svelte';
 	import { page } from '$app/stores';
+	import { toReceipt } from '$lib/mypos.js';
 
 	const db = $page.data.supabase;
 	const session = $page.data.session;
@@ -17,26 +18,41 @@
 	function submitOrder(orderType) {
 		return async () => {
 			busy = true;
-			const order = await db
-				.from('orders')
-				.insert([
-					{
-						total_price: $cart.total,
-						payment_type: orderType,
-						created_by: session.user.id
-					}
-				])
-				.select('id');
-			await db.from('order_items').insert(
-				$cart.items.map((item) => ({
-					order_id: order.data[0].id,
-					product_id: item.id,
-					variant_id: item.variant.id,
-					quantity: item.quantity,
-					unit_price: item.variant.price
-				}))
-			);
-			cart.reset();
+			try {
+				const order = await db
+					.from('orders')
+					.insert([
+						{
+							total_price: $cart.total,
+							payment_type: orderType,
+							created_by: session.user.id
+						}
+					])
+					.select('id');
+				const orderId = order.data[0].id;
+				await db.from('order_items').insert(
+					$cart.items.map((item) => ({
+						order_id: orderId,
+						product_id: item.id,
+						variant_id: item.variant.id,
+						quantity: item.quantity,
+						unit_price: item.variant.price
+					}))
+				);
+				if (orderType !== 'register') {
+					const receipt = toReceipt(orderId, $cart, orderType);
+					const posRes = await fetch('/api/pos', {
+						method: 'POST',
+						body: JSON.stringify(receipt)
+					});
+					const posResult = await posRes.json();
+					if ('error' in posResult) throw posResult.error;
+				}
+				cart.reset();
+			} catch (e) {
+				console.error(e);
+				alert(`Грешка при изпращане на поръчката!\n\n${e.message}`);
+			}
 			busy = false;
 		};
 	}
