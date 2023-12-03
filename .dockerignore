@@ -2,4 +2,3 @@
 .svelte-kit/
 .vscode/
 node_modules/
-.env.local

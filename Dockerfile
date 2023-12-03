@@ -5,6 +5,5 @@ WORKDIR /app
 
 COPY . /app
 
-RUN npm ci
-
-EXPOSE 5173
+RUN npm i
+RUN npm run build
