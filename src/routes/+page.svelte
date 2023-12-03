@@ -1,5 +1,6 @@
 <script>
 	import CategorySidebar from '$lib/components/CategorySidebar.svelte';
+	import SettingsSidebar from '$lib/components/SettingsSidebar.svelte';
 	import Cart from '$lib/components/Cart.svelte';
 	import Item from '$lib/components/Item.svelte';
 	import IconButton from '$lib/components/IconButton.svelte';
@@ -87,9 +88,13 @@
 	});
 </script>
 
-<div class="w-full p-2 flex">
+<div class="w-full p-2 flex h-screen -mb-4">
 	<div class="w-32 mr-4 border-r pr-2 pt-4">
 		<CategorySidebar {categories} {selectedCategory} on:select={selectCategory} />
+
+		<hr class="mt-48 mb-4"/>
+
+		<SettingsSidebar />
 	</div>
 
 	<div class="flex-1 mr-4">
