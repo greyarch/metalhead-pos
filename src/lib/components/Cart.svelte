@@ -1,11 +1,13 @@
 <script>
 	import cart from '$lib/stores/cart.js';
+	import { stats } from '$lib/stores/stats.js';
 	import Trash from '$lib/icons/Trash.svelte';
 	import { page } from '$app/stores';
 	import { toReceipt } from '$lib/mypos.js';
 
 	const db = $page.data.supabase;
 	const session = $page.data.session;
+	updateStats();
 
 	function removeVariantFromCart(item) {
 		return () => {
@@ -15,48 +17,62 @@
 
 	let busy = false;
 
-	function submitOrder(orderType) {
+	async function submitOrder(orderType) {
 		let orderId = 0;
-		return async () => {
-			busy = true;
-			try {
-				const order = await db
-					.from('orders')
-					.insert([
-						{
-							total_price: $cart.total,
-							payment_type: orderType,
-							created_by: session.user.id
-						}
-					])
-					.select('id');
-				orderId = order.data[0].id;
-				await db.from('order_items').insert(
-					$cart.items.map((item) => ({
-						order_id: orderId,
-						product_id: item.id,
-						variant_id: item.variant.id,
-						quantity: item.quantity,
-						unit_price: item.variant.price
-					}))
-				);
-				if (orderType !== 'register') {
-					const receipt = toReceipt(orderId, $cart, orderType);
-					const posRes = await fetch('/api/pos', {
-						method: 'POST',
-						body: JSON.stringify(receipt)
-					});
-					const posResult = await posRes.json();
-					if ('error' in posResult) throw posResult.error;
-				}
-				cart.reset();
-			} catch (e) {
-				console.error(e);
-				const { error } = await db.from('orders').delete().eq('id', orderId);
-				if (error) console.error(error);
-				alert(`Грешка при изпращане на поръчката!\n\n${e.message}`);
+		busy = true;
+		try {
+			const order = await db
+				.from('orders')
+				.insert([
+					{
+						total_price: $cart.total,
+						payment_type: orderType,
+						created_by: session.user.id
+					}
+				])
+				.select('id');
+			orderId = order.data[0].id;
+			await db.from('order_items').insert(
+				$cart.items.map((item) => ({
+					order_id: orderId,
+					product_id: item.id,
+					variant_id: item.variant.id,
+					quantity: item.quantity,
+					unit_price: item.variant.price
+				}))
+			);
+			if (orderType !== 'register') {
+				const receipt = toReceipt(orderId, $cart, orderType);
+				const posRes = await fetch('/api/pos', {
+					method: 'POST',
+					body: JSON.stringify(receipt)
+				});
+				const posResult = await posRes.json();
+				if ('error' in posResult) throw posResult.error;
 			}
-			busy = false;
+			cart.reset();
+		} catch (e) {
+			console.error(e);
+			const { error } = await db.from('orders').delete().eq('id', orderId);
+			if (error) console.error(error);
+			alert(`Грешка при изпращане на поръчката!\n\n${e.message}`);
+		}
+		busy = false;
+	}
+
+	async function updateStats() {
+		const { data, error } = await db
+			.from('orders')
+			.select('total_price')
+			.gte('created_at', new Date().toISOString().slice(0, 10));
+		if (error) console.error(error);
+		else $stats.today = data.reduce((acc, curr) => acc + curr.total_price, 0);
+	}
+
+	function handleSubmit(orderType) {
+		return async () => {
+			await submitOrder(orderType);
+			await updateStats();
 		};
 	}
 </script>
@@ -68,6 +84,8 @@
 			<button class="float-right" on:click={cart.reset}>
 				<Trash />
 			</button>
+		{:else}
+			<span class="text-gray-400 float-right">Днес: {$stats.today}лв.</span>
 		{/if}
 	</h2>
 	<hr class="pb-4" />
@@ -103,15 +121,15 @@
 	{#if $cart.items.length}
 		<div class="flex justify-between border-t pt-4 mt-4">
 			<button
-				on:click={submitOrder('cash')}
+				on:click={handleSubmit('cash')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">В брой</button
 			>
 			<button
-				on:click={submitOrder('card')}
+				on:click={handleSubmit('card')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">С карта</button
 			>
 			<button
-				on:click={submitOrder('register')}
+				on:click={handleSubmit('register')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">Каса</button
 			>
 		</div>
