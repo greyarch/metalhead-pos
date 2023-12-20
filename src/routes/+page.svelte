@@ -92,7 +92,7 @@
 	<div class="w-32 mr-4 border-r pr-2 pt-4">
 		<CategorySidebar {categories} {selectedCategory} on:select={selectCategory} />
 
-		<hr class="mt-48 mb-4"/>
+		<hr class="mt-48 mb-4" />
 
 		<SettingsSidebar />
 	</div>
@@ -111,9 +111,9 @@
 			{/if}
 		</h2>
 		<hr class="mb-2" />
-		{#each items as item}
-			<div class="mb-2">
-				{#if editMode}
+		{#if editMode}
+			{#each items as item, i}
+				<div class="mb-2">
 					<div class="md:flex md:items-center mb-2">
 						<label class="block text-white-500 font-bold">
 							<input
@@ -124,11 +124,15 @@
 							<span class="text-xl"> {item.name} </span>
 						</label>
 					</div>
-				{:else if item.active}
+				</div>
+			{/each}
+		{:else}
+			{#each items.filter((item) => item.active) as item, i}
+				<div class="m-2 {i % 2 == 0 ? 'bg-slate-800' : ''}">
 					<Item {item} handleClick={addItemToCart} />
-				{/if}
-			</div>
-		{/each}
+				</div>
+			{/each}
+		{/if}
 	</div>
 
 	<div class="w-96 border-l pl-4">

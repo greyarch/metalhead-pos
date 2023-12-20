@@ -23,4 +23,4 @@
 		{/each}
 	</div>
 {/if}
-<hr class="mt-2" />
+<hr class="m-2" />
