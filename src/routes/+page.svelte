@@ -81,6 +81,21 @@
 		selectedCategory = e.detail.category;
 	}
 
+	function updateProductsVisibility() {
+		items.map(async ({ id, active }) => {
+			const { error } = await $page.data.supabase.from('products').update({ active }).eq('id', id);
+			if (error) {
+				console.error(error);
+				alert(error);
+			}
+		});
+	}
+
+	function handleConfirmEdit() {
+		editMode = false;
+		updateProductsVisibility();
+	}
+
 	let editMode = false;
 
 	onMount(() => {
@@ -103,9 +118,7 @@
 			{#if editMode}
 				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><Xmark /></IconButton> -->
 				<!-- <IconButton on:click={addItem}><Plus /></IconButton> -->
-				<IconButton on:click={() => (editMode = false)} class="border-green-300"
-					><Check /></IconButton
-				>
+				<IconButton on:click={handleConfirmEdit} class="border-green-300"><Check /></IconButton>
 			{:else}
 				<IconButton on:click={() => (editMode = true)}><Cog /></IconButton>
 			{/if}
