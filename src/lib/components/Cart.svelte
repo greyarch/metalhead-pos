@@ -114,7 +114,7 @@
 	<div class="border-t pt-4">
 		<div class="flex justify-between">
 			<span class="font-bold text-xl">Общо:</span>
-			<span class="text-xl">{$cart.total} лв.</span>
+			<span class="text-xl">{$cart.total.toFixed(2)} лв.</span>
 		</div>
 	</div>
 
