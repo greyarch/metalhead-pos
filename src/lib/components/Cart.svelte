@@ -4,6 +4,7 @@
 	import Trash from '$lib/icons/Trash.svelte';
 	import { page } from '$app/stores';
 	import { toReceipt } from '$lib/mypos.js';
+	import Calc from '$lib/components/Calc.svelte';
 
 	const db = $page.data.supabase;
 	const session = $page.data.session;
@@ -133,5 +134,7 @@
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">Каса</button
 			>
 		</div>
+		<br />
+		<Calc />
 	{/if}
 </div>
