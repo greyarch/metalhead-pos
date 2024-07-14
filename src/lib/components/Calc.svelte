@@ -22,8 +22,8 @@
 			placeholder="0"
 			bind:value={input}
 		/>
-		<span class="p-3">- {$cart.total}</span>
-		<span class="p-3">{input ? `= ${result}` : ''}</span>
+		<span class="p-3">- {$cart.total.toFixed(2)}</span>
+		<span class="p-3">{input ? `= ${result.toFixed(2)}` : ''}</span>
 	</div>
 	<div class="grid grid-cols-3 gap-2">
 		{#each ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', 'C'] as button}
