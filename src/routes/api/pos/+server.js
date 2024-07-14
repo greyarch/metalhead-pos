@@ -1,15 +1,15 @@
-import { PRIVATE_POS_URL, PRIVATE_POS_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export async function POST({ request, fetch, locals }) {
 	const session = await locals.getSession();
 	if (!session) return new Response(401);
 	const body = await request.text();
 	try {
-		const res = await fetch(PRIVATE_POS_URL, {
+		const res = await fetch(env.PRIVATE_POS_URL, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-API-Key': PRIVATE_POS_API_KEY
+				'X-API-Key': env.PRIVATE_POS_API_KEY
 			},
 			body
 		});
