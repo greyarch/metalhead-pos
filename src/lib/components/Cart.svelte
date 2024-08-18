@@ -62,12 +62,13 @@
 	}
 
 	async function updateStats() {
-		const { data, error } = await db
-			.from('orders')
-			.select('total_price')
-			.gte('created_at', new Date().toISOString().slice(0, 10));
-		if (error) console.error(error);
-		else $stats.today = data.reduce((acc, curr) => acc + curr.total_price, 0);
+		const { data, error } = await db.rpc('get_today_order_sums');
+		if (error) {
+			console.error(error);
+		} else {
+			$stats.todayTotal = data[0].total_sum;
+			$stats.todayRegister = data[0].register_sum;
+		}
 	}
 
 	function handleSubmit(orderType) {
@@ -86,7 +87,9 @@
 				<Trash />
 			</button>
 		{:else}
-			<span class="text-gray-400 float-right">Днес: {$stats.today}лв.</span>
+			<span class="text-gray-400 float-right"
+				>Днес: {$stats.todayTotal} / {$stats.todayRegister}лв.</span
+			>
 		{/if}
 	</h2>
 	<hr class="pb-4" />
