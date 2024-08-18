@@ -108,7 +108,15 @@
 							: ''}
 					</span>
 				</span>
-				<span>x{cartItem.quantity}</span>
+				<!-- <span>x{cartItem.quantity}</span> -->
+				<input
+					type="number"
+					bind:value={cartItem.quantity}
+					on:input={(e) => cart.update(cartItem, e.target.value)}
+					on:focus={(e) => e.target.select()}
+					min="1"
+					class="w-16 text-right border rounded px-2 py-1 text-black"
+				/>
 			</div>
 			<div class="text-right text-gray-400">{cartItem.variant.price * cartItem.quantity} лв.</div>
 		</div>
@@ -141,3 +149,15 @@
 		<Calc />
 	{/if}
 </div>
+
+<style>
+	/* Remove spinner buttons from number input */
+	input[type='number']::-webkit-inner-spin-button,
+	input[type='number']::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	input[type='number'] {
+		-moz-appearance: textfield;
+	}
+</style>

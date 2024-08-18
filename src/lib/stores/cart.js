@@ -51,4 +51,15 @@ function reset() {
 	});
 }
 
-export default { ...cart, add, remove, removeAll, reset };
+function update(item, newQuantity) {
+	cart.update((cart) => {
+		const existingItem = cart.items.find((i) => i.name === item.name && i.variant === item.variant);
+		if (existingItem) {
+			existingItem.quantity = newQuantity;
+			cart.total = getTotalPrice(cart.items);
+		}
+		return cart;
+	});
+}
+
+export default { ...cart, add, remove, removeAll, reset, update };
