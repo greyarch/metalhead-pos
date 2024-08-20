@@ -66,8 +66,8 @@
 		if (error) {
 			console.error(error);
 		} else {
-			$stats.todayTotal = data[0].total_sum;
-			$stats.todayRegister = data[0].register_sum;
+			$stats.todayTotal = data[0].total_sum || 0;
+			$stats.todayRegister = data[0].register_sum || 0;
 		}
 	}
 
