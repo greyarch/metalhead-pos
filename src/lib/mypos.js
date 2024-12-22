@@ -1,5 +1,7 @@
+import { env } from '$env/dynamic/public';
+
 export async function mypos(payload) {
-	const posRes = await fetch('/api/pos', {
+	const posRes = await fetch(env.PUBLIC_POS_URL, {
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});

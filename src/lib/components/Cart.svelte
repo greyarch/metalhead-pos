@@ -6,6 +6,8 @@
 	import { toReceipt } from '$lib/mypos.js';
 	import Calc from '$lib/components/Calc.svelte';
 
+	import { env } from '$env/dynamic/public';
+
 	const db = $page.data.supabase;
 	const session = $page.data.session;
 	updateStats();
@@ -44,7 +46,7 @@
 			);
 			if (orderType !== 'register') {
 				const receipt = toReceipt(orderId, $cart, orderType);
-				const posRes = await fetch('/api/pos', {
+				const posRes = await fetch(env.PUBLIC_POS_URL, {
 					method: 'POST',
 					body: JSON.stringify(receipt)
 				});
