@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/private';
 
 export async function POST({ request, fetch, locals }) {
-	const session = await locals.getSession();
+	const session = await locals.safeGetSession();
 	if (!session) return new Response(401);
 	const body = await request.text();
 	try {
