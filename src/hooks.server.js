@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
 import { createSupabaseServerClient } from '@supabase/auth-helpers-sveltekit';
+import { redirect } from '@sveltejs/kit';
 
 export const handle = async ({ event, resolve }) => {
 	event.locals.supabase = createSupabaseServerClient({
@@ -29,6 +30,7 @@ export const handle = async ({ event, resolve }) => {
 		} catch (error) {
 			console.error('Exception when getting a session, signing out.', error);
 			await supabase.auth.signOut();
+			throw redirect(303, '/');
 		}
 	};
 	return resolve(event, {

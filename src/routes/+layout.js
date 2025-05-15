@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
 import { createSupabaseLoadClient } from '@supabase/auth-helpers-sveltekit';
+import { redirect } from '@sveltejs/kit';
 
 export const ssr = false;
 export const csr = true;
@@ -23,5 +24,6 @@ export const load = async ({ fetch, data, depends }) => {
 	} catch (error) {
 		console.error("Exception when getting a session, signing out.", error)
 		await supabase.auth.signOut();
+		throw redirect(303, '/');
 	}
 };
