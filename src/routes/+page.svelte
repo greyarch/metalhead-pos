@@ -7,7 +7,7 @@
 	import cart from '$lib/stores/cart.js';
 	import Check from '$lib/icons/Check.svelte';
 	import Cog from '$lib/icons/Cog.svelte';
-	// import Xmark from '$lib/icons/X.svelte';
+	import X from '$lib/icons/X.svelte';
 	// import Plus from '$lib/icons/Plus.svelte';
 
 	import { page } from '$app/stores';
@@ -116,8 +116,9 @@
 		<h2 class="text-2xl mb-2 font-semibold">
 			<span class="text-orange-300">{selectedCategory}</span>
 			{#if editMode}
-				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><Xmark /></IconButton> -->
+				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><X /></IconButton> -->
 				<!-- <IconButton on:click={addItem}><Plus /></IconButton> -->
+				<IconButton on:click={() => editMode = false} class="border-red-300"><X /></IconButton>
 				<IconButton on:click={handleConfirmEdit} class="border-green-300"><Check /></IconButton>
 			{:else}
 				<IconButton on:click={() => (editMode = true)}><Cog /></IconButton>
