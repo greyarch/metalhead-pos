@@ -1,10 +1,9 @@
-import { SupabaseClient, Session, User } from '@supabase/supabase-js'
-import { Database } from './DatabaseDefinitions'
 
+import { SupabaseClient, Session } from '@supabase/supabase-js'
 declare global {
   namespace App {
     interface Locals {
-      supabase: SupabaseClient<Database>
+      supabase: SupabaseClient
       safeGetSession(): Promise<{ session: Session | null; user: User | null }>
     }
     interface PageData {

@@ -1,29 +1,31 @@
-import { env } from '$env/dynamic/public';
-import { createSupabaseLoadClient } from '@supabase/auth-helpers-sveltekit';
-import { redirect } from '@sveltejs/kit';
-
-export const ssr = false;
-export const csr = true;
+import { createBrowserClient, createServerClient, isBrowser } from '@supabase/ssr'
+import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public'
 
 export const load = async ({ fetch, data, depends }) => {
-	try {
-		depends('supabase:auth');
-
-		const supabase = createSupabaseLoadClient({
-			supabaseUrl: env.PUBLIC_SUPABASE_URL,
-			supabaseKey: env.PUBLIC_SUPABASE_ANON_KEY,
-			event: { fetch },
-			serverSession: data.session
-		});
-
-		const {
-			data: { session }
-		} = await supabase.auth.getSession();
-
-		return { supabase, session };
-	} catch (error) {
-		console.error("Exception when getting a session, signing out.", error)
-		await supabase.auth.signOut();
-		throw redirect(303, '/');
-	}
-};
+  depends('supabase:auth')
+  const supabase = isBrowser()
+    ? createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+        global: {
+          fetch,
+        },
+      })
+    : createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+        global: {
+          fetch,
+        },
+        cookies: {
+          getAll() {
+            return data.cookies
+          },
+        },
+      })
+  /**
+   * It's fine to use `getSession` here, because on the client, `getSession` is
+   * safe, and on the server, it reads `session` from the `LayoutData`, which
+   * safely checked the session using `safeGetSession`.
+   */
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  return { supabase, session }
+}
