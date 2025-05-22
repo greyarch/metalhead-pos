@@ -6,7 +6,8 @@
 	import IconButton from '$lib/components/IconButton.svelte';
 	import cart from '$lib/stores/cart.js';
 	import Check from '$lib/icons/Check.svelte';
-	import Cog from '$lib/icons/Cog.svelte';
+	// import Cog from '$lib/icons/Cog.svelte';
+	import List from '$lib/icons/List.svelte';
 	import X from '$lib/icons/X.svelte';
 	// import Plus from '$lib/icons/Plus.svelte';
 
@@ -101,6 +102,7 @@
 	onMount(() => {
 		loadProducts();
 	});
+
 </script>
 
 <div class="w-full p-2 flex h-screen -mb-4">
@@ -118,10 +120,11 @@
 			{#if editMode}
 				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><X /></IconButton> -->
 				<!-- <IconButton on:click={addItem}><Plus /></IconButton> -->
-				<IconButton on:click={() => editMode = false} class="border-red-300"><X /></IconButton>
+				<IconButton on:click={() => (editMode = false)} class="border-red-300"><X /></IconButton>
 				<IconButton on:click={handleConfirmEdit} class="border-green-300"><Check /></IconButton>
 			{:else}
-				<IconButton on:click={() => (editMode = true)}><Cog /></IconButton>
+				<!-- <IconButton on:click={corsCheck}><Cog /></IconButton> -->
+				<IconButton on:click={() => (editMode = true)}><List /></IconButton>
 			{/if}
 		</h2>
 		<hr class="mb-2" />
