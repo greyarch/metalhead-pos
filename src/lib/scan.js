@@ -35,7 +35,7 @@ async function checkService(method, url, payload, timeout) {
 			headers: {
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify(payload),
+			// body: JSON.stringify(payload),
 			signal: controller.signal
 		});
 
