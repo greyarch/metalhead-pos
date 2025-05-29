@@ -4,7 +4,7 @@ export async function findActiveServices(
 	endRange = 110,
 	port = 8080,
 	endpoint = '/jsonrpc',
-	timeout = 3000,
+	timeout = 3000
 ) {
 	const promises = [];
 
@@ -13,31 +13,43 @@ export async function findActiveServices(
 		const url = `http://${ip}:${port}${endpoint}`;
 
 		const requestPromise = checkService(url, timeout)
-			.then((info) => ({ ip, url, active: true, ...info }))
-			.catch(() => null);
+			.then(() => ({ ip, url, active: true }))
+			.catch(() => ({ ip, url, active: false })); // Only timeouts
 
 		promises.push(requestPromise);
 	}
 
 	const results = await Promise.all(promises);
-	return results.filter((result) => result !== null);
+	return results.filter((result) => result.active);
 }
 
-async function checkService(method, url, payload, timeout) {
+async function checkService(url, timeout) {
 	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+	// Only abort on timeout
+	const timeoutId = setTimeout(() => {
+		controller.abort();
+	}, timeout);
 
 	try {
-		const response = await fetch(url, {
-			method: 'GET', // GET requests don't trigger preflight
+		// Any response (including CORS errors, 404s, etc.) means service is active
+		await fetch(url, {
+			method: 'GET',
 			mode: 'no-cors',
 			signal: controller.signal
 		});
 
 		clearTimeout(timeoutId);
-		return { method: 'GET' };
+		return true;
 	} catch (error) {
 		clearTimeout(timeoutId);
-		throw error;
+
+		// Only consider AbortError (timeout) as failure
+		if (error.name === 'AbortError') {
+			throw error; // This is a timeout - service not active
+		}
+
+		// All other errors (CORS, network errors, etc.) mean service responded
+		return true;
 	}
 }
