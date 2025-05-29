@@ -120,6 +120,7 @@
 				localStorage.setItem('myposUrl', activeServices[0].url);
 			} else {
 				console.error('No myPOS devices found!');
+				alert("Не намирам myPOS устройства!");
 			}
 
 			return activeServices;
