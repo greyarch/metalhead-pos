@@ -103,11 +103,11 @@
 	let editMode = false;
 
 	onMount(() => {
+		localStorage.getItem('myposUrl') || localStorage.setItem('myposUrl', env.PUBLIC_POS_URL);
 		loadProducts();
 	});
 
 	async function endpointCheck() {
-		localStorage.setItem('myposUrl', env.PUBLIC_POS_URL);
 		console.log('Scanning for active myPOS devices...');
 
 		try {
