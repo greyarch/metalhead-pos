@@ -1,4 +1,5 @@
 export async function findActiveServices(
+	method = 'GET',
 	baseIP = '192.168.8',
 	startRange = 100,
 	endRange = 110,
@@ -13,7 +14,7 @@ export async function findActiveServices(
 		const ip = `${baseIP}.${i}`;
 		const url = `http://${ip}:${port}${endpoint}`;
 
-		const requestPromise = checkService(url, payload, timeout)
+		const requestPromise = checkService(method, url, payload, timeout)
 			.then((responseInfo) => ({ ip, url, active: true, ...responseInfo }))
 			.catch(() => null);
 
@@ -24,13 +25,13 @@ export async function findActiveServices(
 	return results.filter((result) => result !== null);
 }
 
-async function checkService(url, payload, timeout) {
+async function checkService(method, url, payload, timeout) {
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => controller.abort(), timeout);
 
 	try {
 		const response = await fetch(url, {
-			method: 'POST',
+			method,
 			headers: {
 				'Content-Type': 'application/json'
 			},
