@@ -1,12 +1,10 @@
 export async function findActiveServices(
-	method = 'GET',
 	baseIP = '192.168.8',
 	startRange = 100,
 	endRange = 110,
 	port = 8080,
 	endpoint = '/jsonrpc',
 	timeout = 3000,
-	payload = { id: 1, jsonrpc: '2.0', method: 'ReadFiscalNumbers' }
 ) {
 	const promises = [];
 
@@ -14,8 +12,8 @@ export async function findActiveServices(
 		const ip = `${baseIP}.${i}`;
 		const url = `http://${ip}:${port}${endpoint}`;
 
-		const requestPromise = checkService(method, url, payload, timeout)
-			.then((responseInfo) => ({ ip, url, active: true, ...responseInfo }))
+		const requestPromise = checkService(url, timeout)
+			.then((info) => ({ ip, url, active: true, ...info }))
 			.catch(() => null);
 
 		promises.push(requestPromise);
@@ -31,25 +29,15 @@ async function checkService(method, url, payload, timeout) {
 
 	try {
 		const response = await fetch(url, {
-			method,
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			// body: JSON.stringify(payload),
+			method: 'GET', // GET requests don't trigger preflight
+			mode: 'no-cors',
 			signal: controller.signal
 		});
 
 		clearTimeout(timeoutId);
-
-		// Return info about the response - any response means service is active
-		return {
-			status: response.status,
-			statusText: response.statusText,
-			respondedAt: new Date().toISOString()
-		};
+		return { method: 'GET' };
 	} catch (error) {
 		clearTimeout(timeoutId);
-		// Network errors, timeouts, etc. mean no service
 		throw error;
 	}
 }
