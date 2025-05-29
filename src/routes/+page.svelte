@@ -6,10 +6,13 @@
 	import IconButton from '$lib/components/IconButton.svelte';
 	import cart from '$lib/stores/cart.js';
 	import Check from '$lib/icons/Check.svelte';
-	// import Cog from '$lib/icons/Cog.svelte';
+	import Cog from '$lib/icons/Cog.svelte';
 	import List from '$lib/icons/List.svelte';
 	import X from '$lib/icons/X.svelte';
 	// import Plus from '$lib/icons/Plus.svelte';
+
+	import { env } from '$env/dynamic/public';
+	import { findActiveServices } from '$lib/scan.js';
 
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
@@ -103,6 +106,27 @@
 		loadProducts();
 	});
 
+	async function endpointCheck() {
+		localStorage.setItem('myposUrl', env.PUBLIC_POS_URL);
+		console.log('Scanning for active myPOS devices...');
+
+		try {
+			const activeServices = await findActiveServices();
+
+			if (activeServices.length) {
+				console.log(`Found ${activeServices.length} active myPOS devices:`);
+				console.log(activeServices);
+				localStorage.setItem('myposUrl', activeServices[0].url);
+			} else {
+				console.error('No myPOS devices found!');
+			}
+
+			return activeServices;
+		} catch (error) {
+			console.error('Error during scan:', error);
+			return [];
+		}
+	}
 </script>
 
 <div class="w-full p-2 flex h-screen -mb-4">
@@ -123,7 +147,7 @@
 				<IconButton on:click={() => (editMode = false)} class="border-red-300"><X /></IconButton>
 				<IconButton on:click={handleConfirmEdit} class="border-green-300"><Check /></IconButton>
 			{:else}
-				<!-- <IconButton on:click={corsCheck}><Cog /></IconButton> -->
+				<IconButton on:click={endpointCheck}><Cog /></IconButton>
 				<IconButton on:click={() => (editMode = true)}><List /></IconButton>
 			{/if}
 		</h2>

@@ -1,12 +1,11 @@
-import { env } from '$env/dynamic/public';
-
 export async function mypos(payload) {
-	const posRes = await fetch(env.PUBLIC_POS_URL, {
+	const myposUrl = localStorage.getItem('myposUrl')
+	const posRes = await fetch(myposUrl, {
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});
 	const posResult = await posRes.json();
-	if ('error' in posResult) throw posResult.error;
+	if ('error' in posResult) throw posResult.error
 	return posResult;
 }
 
@@ -84,5 +83,13 @@ export async function printAgain() {
 		id: 1,
 		jsonrpc: '2.0',
 		method: 'PrintAgain'
+	});
+}
+
+export async function readFiscalNumbers() {
+	return await mypos({
+		id: 1,
+		jsonrpc: '2.0',
+		method: 'ReadFiscalNumbers'
 	});
 }
