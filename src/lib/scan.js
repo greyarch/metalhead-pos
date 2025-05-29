@@ -43,12 +43,19 @@ async function checkService(url, timeout) {
 		return true;
 	} catch (error) {
 		clearTimeout(timeoutId);
-
-		// Only consider AbortError (timeout) as failure
+		
+        // Check error types
 		if (error.name === 'AbortError') {
-			throw error; // This is a timeout - service not active
+			throw error; // Timeout - service not active
 		}
 
+		if (
+			error.message.includes('Failed to fetch') ||
+			error.message.includes('Network request failed') ||
+			error.message.includes('ERR_CONNECTION_REFUSED')
+		) {
+			throw error; // Connection refused - service not active
+		}
 		// All other errors (CORS, network errors, etc.) mean service responded
 		return true;
 	}
