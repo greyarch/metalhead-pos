@@ -104,10 +104,11 @@
 
 	onMount(() => {
 		localStorage.getItem('myposUrl') || localStorage.setItem('myposUrl', env.PUBLIC_POS_URL);
+		myposCheck();
 		loadProducts();
 	});
 
-	async function endpointCheck() {
+	async function myposCheck() {
 		console.log('Scanning for active myPOS devices...');
 
 		try {
@@ -147,7 +148,7 @@
 				<IconButton on:click={() => (editMode = false)} class="border-red-300"><X /></IconButton>
 				<IconButton on:click={handleConfirmEdit} class="border-green-300"><Check /></IconButton>
 			{:else}
-				<IconButton on:click={endpointCheck}><Cog /></IconButton>
+				<IconButton on:click={myposCheck}><Cog /></IconButton>
 				<IconButton on:click={() => (editMode = true)}><List /></IconButton>
 			{/if}
 		</h2>
