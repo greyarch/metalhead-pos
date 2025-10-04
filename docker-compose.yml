@@ -1,6 +1,6 @@
 services:
   metalhead-pos:
-    image: metalhead-pos
+    build: ./
     environment:
       - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
       - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
