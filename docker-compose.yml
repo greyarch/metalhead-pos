@@ -1,7 +1,9 @@
 services:
   metalhead-pos:
     image: metalhead-pos
-    env_file:
-      - .env.local
+    environment:
+      - PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
+      - PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY}
+      - PUBLIC_POS_URL: ${PUBLIC_POS_URL}
     ports:
       - '3000:3000'
