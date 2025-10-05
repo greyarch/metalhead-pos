@@ -135,10 +135,10 @@
 				on:click={handleSubmit('card')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">С карта</button
 			>
-			<button
+			<!-- <button
 				on:click={handleSubmit('register')}
 				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">Каса</button
-			>
+			> -->
 		</div>
 		<br />
 		<Calc />
