@@ -55,7 +55,7 @@ function cashOp(operation, amount) {
 			amount,
 			text: [
 				{
-					text: `${opText}: ${amount} лв.`
+					text: `${opText}: €${amount}`
 				}
 			]
 		}

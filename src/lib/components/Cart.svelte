@@ -83,7 +83,7 @@
 			</button>
 		{:else}
 			<span class="text-gray-400 float-right"
-				>Днес: {$stats.todayTotal} / {$stats.todayRegister}лв.</span
+				>Днес: €{$stats.todayTotal} / €{$stats.todayRegister}</span
 			>
 		{/if}
 	</h2>
@@ -113,7 +113,7 @@
 					class="w-16 text-right border rounded px-2 py-1 text-black"
 				/>
 			</div>
-			<div class="text-right text-gray-400">{cartItem.variant.price * cartItem.quantity} лв.</div>
+			<div class="text-right text-gray-400">€{cartItem.variant.price * cartItem.quantity}</div>
 		</div>
 	{/each}
 
@@ -121,7 +121,7 @@
 	<div class="border-t pt-4">
 		<div class="flex justify-between">
 			<span class="font-bold text-xl">Общо:</span>
-			<span class="text-xl">{$cart.total.toFixed(2)} лв.</span>
+			<span class="text-xl">€{$cart.total.toFixed(2)}</span>
 		</div>
 	</div>
 

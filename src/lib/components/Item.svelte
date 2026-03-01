@@ -4,9 +4,9 @@
 
 	function btn(variant) {
 		if (variant.name === 'default') {
-			return `${variant.price}лв.`;
+			return `€${variant.price}`;
 		}
-		return `${variant.name} - ${variant.price}лв.`;
+		return `${variant.name} - €${variant.price}`;
 	}
 </script>
 
