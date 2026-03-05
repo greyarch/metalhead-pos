@@ -83,7 +83,7 @@
 			</button>
 		{:else}
 			<span class="text-gray-400 float-right"
-				>Днес: €{$stats.todayTotal} / €{$stats.todayRegister}</span
+				>Днес: €{$stats.todayTotal}</span
 			>
 		{/if}
 	</h2>
