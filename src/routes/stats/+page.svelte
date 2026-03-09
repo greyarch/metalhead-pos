@@ -26,16 +26,16 @@
 				<th class="px-4 py-2">Общо</th>
 				<th class="px-4 py-2">В брой</th>
 				<th class="px-4 py-2">Карта</th>
-				<th class="px-4 py-2">Каса</th>
+				<!-- <th class="px-4 py-2">Каса</th> -->
 			</tr>
 		</thead>
 		<tbody>
 			<tr>
 				<th class="border px-4 py-2 text-left" scope="row">Днес</th>
-				<td class="border px-4 py-2">{today.total_today}</td>
-				<td class="border px-4 py-2">{today.cash_today}</td>
-				<td class="border px-4 py-2">{today.card_today}</td>
-				<td class="border px-4 py-2">{today.register_today}</td>
+				<td class="border px-4 py-2">{today.total_today.toFixed(2)}</td>
+				<td class="border px-4 py-2">{today.cash_today.toFixed(2)}</td>
+				<td class="border px-4 py-2">{today.card_today.toFixed(2)}</td>
+				<!-- <td class="border px-4 py-2">{today.register_today}</td> -->
 			</tr>
 		</tbody>
 	</table>
