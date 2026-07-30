@@ -13,8 +13,8 @@
 
 	import { env } from '$env/dynamic/public';
 	import { findActiveServices } from '$lib/scan.js';
+	import { pb } from '$lib/pb.js';
 
-	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
 	let prdts = {};
@@ -34,38 +34,20 @@
 		return 0;
 	};
 
-	function loadProducts() {
-		$page.data.supabase
-			?.from('products_variants')
-			.select(
-				'price, products ( id, name, active, categories ( id, name ) ), variants ( id, name )'
-			)
-			.then(({ data }) => {
-				for (const { price, products, variants } of data) {
-					const cat = products.categories.name;
-					const id = products.id;
-					const name = products.name;
-					if (!prdts[cat]) prdts[cat] = [];
-					const existingProduct = prdts[cat].find((p) => p.name === name);
-					if (existingProduct) {
-						existingProduct.variants.push({
-							id: variants.id,
-							name: variants.name,
-							price,
-							active: products.active
-						});
-					} else {
-						prdts[cat].push({
-							id,
-							name,
-							variants: [{ id: variants.id, name: variants.name, price }],
-							active: products.active
-						});
-					}
-				}
-				categories = Object.keys(prdts);
-				selectedCategory = categories[0];
-			});
+	async function loadProducts() {
+		const [cats, products] = await Promise.all([
+			pb.collection('categories').getFullList({ sort: 'sort,name' }),
+			pb.collection('products').getFullList()
+		]);
+
+		const catName = Object.fromEntries(cats.map((c) => [c.id, c.name]));
+		prdts = Object.fromEntries(cats.map((c) => [c.name, []]));
+		for (const { id, name, active, category, variants } of products) {
+			prdts[catName[category]]?.push({ id, name, active, variants });
+		}
+
+		categories = cats.map((c) => c.name);
+		selectedCategory = categories[0];
 	}
 
 	$: items = (prdts[selectedCategory] ?? []).sort(sortByName);
@@ -85,19 +67,20 @@
 		selectedCategory = e.detail.category;
 	}
 
-	function updateProductsVisibility() {
-		items.map(async ({ id, active }) => {
-			const { error } = await $page.data.supabase.from('products').update({ active }).eq('id', id);
-			if (error) {
-				console.error(error);
-				alert(error);
-			}
-		});
+	async function updateProductsVisibility() {
+		try {
+			await Promise.all(
+				items.map(({ id, active }) => pb.collection('products').update(id, { active }))
+			);
+		} catch (error) {
+			console.error(error);
+			alert(error);
+		}
 	}
 
-	function handleConfirmEdit() {
+	async function handleConfirmEdit() {
 		editMode = false;
-		updateProductsVisibility();
+		await updateProductsVisibility();
 	}
 
 	let editMode = false;

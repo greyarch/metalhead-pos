@@ -3,3 +3,6 @@
 .vscode/
 node_modules/
 .env.local
+pb_data/
+pb_public/
+build/

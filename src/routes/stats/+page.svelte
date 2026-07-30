@@ -1,24 +1,20 @@
 <script>
-    import { page } from '$app/stores';
-    const db = $page.data.supabase;
+	import { pb } from '$lib/pb.js';
 
-    let today = {}
+	let today = { total: 0, cash: 0, card: 0, register: 0 };
 
 	async function getStats() {
-		const { data, error } = await db.rpc('get_stats');
-		if (error) {
+		try {
+			today = await pb.collection('today_totals').getFirstListItem('');
+		} catch (error) {
 			console.error(error);
-		} else {
-			today = data[0]
 		}
 	}
 
-    getStats()
-
+	getStats();
 </script>
 
 <div class="px-4 py-4">
-
 	<table class="table-auto bg-gray-800 rounded-md shadow-md">
 		<thead>
 			<tr>
@@ -26,16 +22,16 @@
 				<th class="px-4 py-2">Общо</th>
 				<th class="px-4 py-2">В брой</th>
 				<th class="px-4 py-2">Карта</th>
-				<!-- <th class="px-4 py-2">Каса</th> -->
+				<th class="px-4 py-2">Каса</th>
 			</tr>
 		</thead>
 		<tbody>
 			<tr>
 				<th class="border px-4 py-2 text-left" scope="row">Днес</th>
-				<td class="border px-4 py-2">{today.total_today.toFixed(2)}</td>
-				<td class="border px-4 py-2">{today.cash_today.toFixed(2)}</td>
-				<td class="border px-4 py-2">{today.card_today.toFixed(2)}</td>
-				<!-- <td class="border px-4 py-2">{today.register_today}</td> -->
+				<td class="border px-4 py-2">{today.total.toFixed(2)}</td>
+				<td class="border px-4 py-2">{today.cash.toFixed(2)}</td>
+				<td class="border px-4 py-2">{today.card.toFixed(2)}</td>
+				<td class="border px-4 py-2">{today.register.toFixed(2)}</td>
 			</tr>
 		</tbody>
 	</table>

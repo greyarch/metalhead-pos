@@ -1,7 +1,12 @@
 services:
   metalhead-pos:
-    build: ./
-    environment:
-      - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
-      - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
-      - PUBLIC_POS_URL=${PUBLIC_POS_URL}
+    build:
+      context: ./
+      args:
+        - PUBLIC_POS_URL=${PUBLIC_POS_URL:-}
+    restart: unless-stopped
+    volumes:
+      - pb_data:/pb/pb_data
+
+volumes:
+  pb_data:

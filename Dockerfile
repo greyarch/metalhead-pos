@@ -1,5 +1,10 @@
 FROM node:lts-alpine AS builder
 
+# Baked into the bundle: the SPA has no server to read env from at runtime.
+# Only the initial fallback — the app rescans the LAN for the device on every load.
+ARG PUBLIC_POS_URL=""
+ENV PUBLIC_POS_URL=$PUBLIC_POS_URL
+
 WORKDIR /app
 
 COPY . ./
@@ -10,13 +15,19 @@ RUN npm run build
 
 # --------
 
-FROM node:lts-alpine
+FROM alpine:3.21
 
-COPY --from=builder /app/build/ /app
-COPY --from=builder /app/package.json .
-COPY --from=builder /app/node_modules node_modules/
+ARG PB_VERSION=0.39.10
 
-EXPOSE 3000
+RUN apk add --no-cache ca-certificates unzip wget \
+	&& wget -q -O /tmp/pb.zip "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip" \
+	&& unzip -q /tmp/pb.zip pocketbase -d /usr/local/bin/ \
+	&& rm /tmp/pb.zip
 
-ENTRYPOINT [ "node" ]
-CMD [ "/app" ]
+COPY pb_migrations /pb/pb_migrations
+COPY --from=builder /app/pb_public /pb/pb_public
+
+EXPOSE 8090
+
+CMD [ "pocketbase", "serve", "--http=0.0.0.0:8090", \
+	"--dir=/pb/pb_data", "--migrationsDir=/pb/pb_migrations", "--publicDir=/pb/pb_public" ]

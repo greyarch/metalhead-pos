@@ -1,16 +1,15 @@
 <script>
-	import { page } from '$app/stores';
+	import { pb } from '$lib/pb.js';
 
 	let loginError = false;
 	let email = '';
 	let password = '';
 
 	const login = async () => {
-		const { error } = await $page.data.supabase.auth.signInWithPassword({
-			email,
-			password
-		});
-		if (error) {
+		try {
+			await pb.collection('users').authWithPassword(email, password);
+			loginError = false;
+		} catch (error) {
 			console.error('LOGIN ERROR', error);
 			loginError = true;
 		}

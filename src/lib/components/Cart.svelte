@@ -2,12 +2,10 @@
 	import cart from '$lib/stores/cart.js';
 	import { stats } from '$lib/stores/stats.js';
 	import Trash from '$lib/icons/Trash.svelte';
-	import { page } from '$app/stores';
+	import { pb } from '$lib/pb.js';
 	import { mypos, toReceipt } from '$lib/mypos.js';
 	import Calc from '$lib/components/Calc.svelte';
 
-	const db = $page.data.supabase;
-	const session = $page.data.session;
 	updateStats();
 
 	function removeVariantFromCart(item) {
@@ -19,50 +17,47 @@
 	let busy = false;
 
 	async function submitOrder(orderType) {
-		let orderId = 0;
+		let order;
 		busy = true;
 		try {
-			const order = await db
-				.from('orders')
-				.insert([
-					{
-						total_price: $cart.total,
-						payment_type: orderType,
-						created_by: session.user.id
-					}
-				])
-				.select('id');
-			orderId = order.data[0].id;
-			await db.from('order_items').insert(
-				$cart.items.map((item) => ({
-					order_id: orderId,
-					product_id: item.id,
-					variant_id: item.variant.id,
+			order = await pb.collection('orders').create({
+				total_price: $cart.total,
+				payment_type: orderType,
+				created_by: pb.authStore.record?.id
+			});
+			for (const item of $cart.items) {
+				await pb.collection('order_items').create({
+					order: order.id,
+					product: item.id,
+					// snapshot: editing a product later must not rewrite past sales
+					product_name: item.name,
+					variant_name: item.variant.name,
 					quantity: item.quantity,
 					unit_price: item.variant.price
-				}))
-			);
+				});
+			}
 			if (orderType !== 'register') {
-				const receipt = toReceipt(orderId, $cart, orderType);
+				// the fiscal device wants a numeric JSON-RPC id; PocketBase ids are strings
+				const receipt = toReceipt(Date.now(), $cart, orderType);
 				await mypos(receipt);
 			}
 			cart.reset();
 		} catch (e) {
 			console.error(e);
-			const { error } = await db.from('orders').delete().eq('id', orderId);
-			if (error) console.error(error);
+			// cascade delete drops the order_items with it
+			if (order) await pb.collection('orders').delete(order.id).catch(console.error);
 			alert(`Грешка при изпращане на поръчката!\n\n${e.message}`);
 		}
 		busy = false;
 	}
 
 	async function updateStats() {
-		const { data, error } = await db.rpc('get_today_order_sums');
-		if (error) {
+		try {
+			const today = await pb.collection('today_totals').getFirstListItem('');
+			$stats.todayTotal = today.total;
+			$stats.todayRegister = today.register;
+		} catch (error) {
 			console.error(error);
-		} else {
-			$stats.todayTotal = data[0].total_sum || 0;
-			$stats.todayRegister = data[0].register_sum || 0;
 		}
 	}
 
