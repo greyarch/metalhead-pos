@@ -19,19 +19,18 @@ function add(item) {
 	});
 }
 
+/** One less of this line. At one, the line goes away. */
 function remove(item) {
 	cart.update((cart) => {
 		const existingItem = cart.items.find((i) => i.name === item.name && i.variant === item.variant);
-		if (existingItem) {
-			if (existingItem.quantity > 1) {
-				existingItem.quantity -= item.quantity;
-			}
-			if (existingItem.quantity === 1) {
-				cart.items.pop(item);
-			}
-			cart.total = getTotalPrice(cart.items);
-			return cart;
+		if (!existingItem) return cart;
+
+		if (existingItem.quantity > 1) {
+			existingItem.quantity -= 1;
+		} else {
+			cart.items = cart.items.filter((i) => i !== existingItem);
 		}
+		cart.total = getTotalPrice(cart.items);
 		return cart;
 	});
 }
@@ -55,7 +54,8 @@ function update(item, newQuantity) {
 	cart.update((cart) => {
 		const existingItem = cart.items.find((i) => i.name === item.name && i.variant === item.variant);
 		if (existingItem) {
-			existingItem.quantity = newQuantity;
+			// the quantity field hands back a string; without this the total concatenates
+			existingItem.quantity = Math.max(1, Math.floor(Number(newQuantity) || 1));
 			cart.total = getTotalPrice(cart.items);
 		}
 		return cart;

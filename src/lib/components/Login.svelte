@@ -2,10 +2,12 @@
 	import { pb } from '$lib/pb.js';
 
 	let loginError = false;
+	let busy = false;
 	let email = '';
 	let password = '';
 
 	const login = async () => {
+		busy = true;
 		try {
 			await pb.collection('users').authWithPassword(email, password);
 			loginError = false;
@@ -13,38 +15,48 @@
 			console.error('LOGIN ERROR', error);
 			loginError = true;
 		}
+		busy = false;
 	};
 </script>
 
-<form
-	class="mx-auto my-36 flex h-[300px] w-[350px] flex-col border-2 bg-white text-black shadow-xl"
-	on:submit|preventDefault={login}
->
-	<div class="mx-8 mt-7 mb-1 flex flex-row justify-start space-x-2">
-		<div class="w-3 text-center font-sans text-xl font-bold"><h1>Login</h1></div>
-	</div>
-	<div class="flex flex-col items-center">
-		<input
-			class="my-2 w-72 border p-2"
-			type="email"
-			placeholder="email"
-			required
-			bind:value={email}
-		/>
-		<input
-			class="my-2 w-72 border p-2"
-			type="password"
-			placeholder="password"
-			required
-			bind:value={password}
-		/>
-	</div>
-	<div class="my-2 flex justify-center">
-		<button class="w-72 border rounded-md bg-primary-500 p-2 font-sans default-action" type="submit"
-			>Login</button
-		>
-	</div>
-	{#if loginError}
-		<div class="p-2 text-red-500 bg-red-100">There was an error logging in. Please try again.</div>
-	{/if}
-</form>
+<div class="flex h-screen items-center justify-center bg-ink p-6">
+	<form class="w-[22rem]" on:submit|preventDefault={login}>
+		<h1 class="display mb-1 text-4xl text-amber">Металхед</h1>
+		<p class="eyebrow mb-6">Каса</p>
+
+		<label class="mb-2 block">
+			<span class="sr-only">Потребител</span>
+			<input
+				class="h-14 w-full rounded-[3px] border border-rule bg-raised px-4"
+				type="email"
+				placeholder="Потребител"
+				autocomplete="username"
+				required
+				bind:value={email}
+			/>
+		</label>
+		<label class="mb-4 block">
+			<span class="sr-only">Парола</span>
+			<input
+				class="h-14 w-full rounded-[3px] border border-rule bg-raised px-4"
+				type="password"
+				placeholder="Парола"
+				autocomplete="current-password"
+				required
+				bind:value={password}
+			/>
+		</label>
+
+		<button class="touch touch-accent h-14 w-full text-lg" type="submit" disabled={busy}>
+			{busy ? 'Момент…' : 'Влез'}
+		</button>
+
+		{#if loginError}
+			<p
+				class="mt-4 border-l-2 border-[color:var(--danger)] py-1 pl-3 text-sm text-[color:var(--danger)]"
+			>
+				Грешен потребител или парола.
+			</p>
+		{/if}
+	</form>
+</div>

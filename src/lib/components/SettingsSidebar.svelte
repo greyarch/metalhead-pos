@@ -1,26 +1,24 @@
 <script>
 	import { cashIn, cashOut, printAgain, diagnostic } from '$lib/mypos.js';
+
+	// Rare and consequential (each prints on the fiscal device), so they sit at the
+	// bottom of the rail, smaller and quieter than anything used during a sale.
+	const actions = [
+		{ label: '+ €100', run: cashIn },
+		{ label: '- €100', run: cashOut },
+		{ label: 'Ре-печат', run: printAgain },
+		{ label: 'Диагностика', run: diagnostic }
+	];
 </script>
 
-<ul>
-	<li class="mb-8">
-		<span class="text-white hover:underline cursor-pointer p-4 rounded-md" on:click={cashIn}
-			>+ €100</span
+<div class="eyebrow mb-2 px-1">Каса</div>
+<div class="flex flex-col gap-1">
+	{#each actions as { label, run }}
+		<button
+			class="touch min-h-[44px] justify-start px-4 text-sm text-muted hover:text-[color:var(--text)]"
+			on:click={run}
 		>
-	</li>
-	<li class="mb-8">
-		<span class="text-white hover:underline cursor-pointer p-4 rounded-md" on:click={cashOut}
-			>- €100</span
-		>
-	</li>
-	<li class="mb-8">
-		<span class="text-white hover:underline cursor-pointer p-4 rounded-md" on:click={printAgain}
-			>Ре-печат</span
-		>
-	</li>
-	<li class="mb-8">
-		<span class="text-white hover:underline cursor-pointer p-4 rounded-md" on:click={diagnostic}
-			>Диагностика</span
-		>
-	</li>
-</ul>
+			{label}
+		</button>
+	{/each}
+</div>

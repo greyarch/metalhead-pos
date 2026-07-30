@@ -2,25 +2,25 @@
 	export let item;
 	export let handleClick;
 
-	function btn(variant) {
-		if (variant.name === 'default') {
-			return `€${variant.price}`;
-		}
-		return `${variant.name} - €${variant.price}`;
-	}
+	const money = (n) => `€${Number(n).toFixed(2)}`;
 </script>
 
 {#if item.variants?.length}
-	<h2 class="text-xl mb-2 font-semibold float-left w-7/12">{item.name}</h2>
-	<div>
-		{#each item.variants as variant}
-			<button
-				class="mr-2 p-1 rounded-md border border-gray-300 hover:bg-gray-100 w-1/6"
-				on:click={handleClick(item, variant)}
-			>
-				{btn(variant)}
-			</button>
-		{/each}
-	</div>
+	<article class="flex items-center justify-between gap-4 border-b border-rule py-2.5">
+		<h3 class="display flex-1 text-xl leading-tight">{item.name}</h3>
+
+		<div class="flex flex-wrap justify-end gap-2">
+			{#each item.variants as variant}
+				<button
+					class="touch w-[7.5rem] flex-col gap-0.5 leading-none"
+					on:click={handleClick(item, variant)}
+				>
+					{#if variant.name !== 'default'}
+						<span class="text-[0.7rem] uppercase tracking-widest text-muted">{variant.name}</span>
+					{/if}
+					<span class="display text-lg">{money(variant.price)}</span>
+				</button>
+			{/each}
+		</div>
+	</article>
 {/if}
-<hr class="m-2" />

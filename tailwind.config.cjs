@@ -1,17 +1,24 @@
-import { join } from 'path';
-import skeleton from '@skeletonlabs/skeleton/tailwind/skeleton.cjs';
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-	darkMode: 'class',
-	content: [
-		'./src/**/*.{html,js,svelte,ts}',
-		join(require.resolve('@skeletonlabs/skeleton'), '../**/*.{html,js,svelte,ts}')
-	],
+	content: ['./src/**/*.{html,js,svelte,ts}'],
 	theme: {
-		extend: {}
+		extend: {
+			fontFamily: {
+				display: ['Oswald', 'sans-serif'],
+				sans: ['IBM Plex Sans', 'ui-sans-serif', 'system-ui', 'sans-serif']
+			},
+			colors: {
+				ink: 'var(--ink)',
+				panel: 'var(--panel)',
+				raised: 'var(--raised)',
+				'raised-hi': 'var(--raised-hi)',
+				rule: 'var(--rule)',
+				muted: 'var(--muted)',
+				amber: 'var(--amber)',
+				'amber-dim': 'var(--amber-dim)',
+				danger: 'var(--danger)'
+			}
+		}
 	},
-	plugins: [...skeleton({
-		themes: { preset: [ "wintry" ] }
-	})]
+	plugins: []
 };

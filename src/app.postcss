@@ -1,5 +1,140 @@
-/*place global styles here */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Fonts. Self-hosted: the till must work with no internet. ---- */
+@font-face {
+	font-family: 'IBM Plex Sans';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/ibm-plex-sans-400-cyrillic.woff2') format('woff2');
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+	font-family: 'IBM Plex Sans';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/ibm-plex-sans-400-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'IBM Plex Sans';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('/fonts/ibm-plex-sans-600-cyrillic.woff2') format('woff2');
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+	font-family: 'IBM Plex Sans';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('/fonts/ibm-plex-sans-600-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'Oswald';
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url('/fonts/oswald-400-700-cyrillic.woff2') format('woff2');
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+	font-family: 'Oswald';
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url('/fonts/oswald-400-700-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+		U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+	--ink: #0a0b0d; /* page */
+	--panel: #121418; /* rails */
+	--raised: #1b1e24; /* buttons, rows */
+	--raised-hi: #252932; /* hover */
+	--rule: #2c313a; /* hairlines */
+	--text: #f4f5f7;
+	--muted: #8a919e;
+	--amber: #ffa524; /* the one accent */
+	--amber-dim: #7a4d05;
+	--danger: #f4573f;
+}
+
 html,
 body {
 	@apply h-full overflow-hidden;
+	background: var(--ink);
+	color: var(--text);
+	font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+	/* prices must not jitter as digits change */
+	font-variant-numeric: tabular-nums;
+	/* lang="bg" otherwise turns on Bulgarian localised Cyrillic, which renders
+	   "Диагностика" as "Дuагносmuка". Correct, but not what the staff see in
+	   every other app. Delete this line to switch to those forms. */
+	font-feature-settings: 'locl' 0;
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* Nothing on a till should select or drag under a thumb. */
+button {
+	-webkit-user-select: none;
+	user-select: none;
+	touch-action: manipulation;
+}
+
+:focus-visible {
+	outline: 2px solid var(--amber);
+	outline-offset: 2px;
+}
+
+@layer components {
+	/* Quiet voice: section labels. */
+	.eyebrow {
+		font-family: 'Oswald', sans-serif;
+		@apply text-xs font-medium uppercase tracking-[0.18em];
+		color: var(--muted);
+	}
+
+	/* Loud voice: category titles, product names, totals. */
+	.display {
+		font-family: 'Oswald', sans-serif;
+		@apply uppercase tracking-wide;
+	}
+
+	/* Every touchable thing. 56px min — a thumb, not a mouse pointer. */
+	.touch {
+		@apply flex min-h-[56px] items-center justify-center rounded-[3px] transition active:scale-[0.97];
+		background: var(--raised);
+		border: 1px solid var(--rule);
+	}
+	.touch:hover {
+		background: var(--raised-hi);
+		border-color: #3a404c;
+	}
+
+	/* The commit actions: pay, confirm. */
+	.touch-accent {
+		border-color: var(--amber-dim);
+		color: var(--amber);
+		@apply font-semibold;
+	}
+	.touch-accent:hover {
+		background: var(--amber);
+		border-color: var(--amber);
+		color: #1a1000;
+	}
+
+	.touch-danger:hover {
+		background: #2a1512;
+		border-color: var(--danger);
+		color: var(--danger);
+	}
 }

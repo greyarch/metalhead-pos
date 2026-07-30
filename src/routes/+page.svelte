@@ -103,7 +103,7 @@
 				localStorage.setItem('myposUrl', activeServices[0].url);
 			} else {
 				console.error('No myPOS devices found!');
-				alert("Не намирам myPOS устройства!");
+				alert('Не намирам myPOS устройства!');
 			}
 
 			return activeServices;
@@ -114,54 +114,59 @@
 	}
 </script>
 
-<div class="w-full p-2 flex h-screen -mb-4">
-	<div class="w-32 mr-4 border-r pr-2 pt-4">
+<div class="flex h-screen w-full bg-ink">
+	<!-- Left rail: what to sell, and the till drawer at the bottom -->
+	<aside class="flex w-52 shrink-0 flex-col border-r border-rule bg-panel p-3">
+		<div class="eyebrow mb-2 px-1">Металхед</div>
 		<CategorySidebar {categories} {selectedCategory} on:select={selectCategory} />
 
-		<hr class="mt-48 mb-4" />
+		<div class="mt-auto pt-6">
+			<SettingsSidebar />
+		</div>
+	</aside>
 
-		<SettingsSidebar />
-	</div>
-
-	<div class="flex-1 mr-4">
-		<h2 class="text-2xl mb-2 font-semibold">
-			<span class="text-orange-300">{selectedCategory}</span>
+	<!-- Centre: the products -->
+	<!-- max-w keeps name and price from drifting apart on a wide screen -->
+	<main class="flex min-w-0 w-full max-w-4xl flex-1 flex-col p-5">
+		<header class="mb-3 flex items-center gap-3 border-b border-rule pb-3">
+			<h2 class="display flex-1 truncate text-3xl text-amber">{selectedCategory}</h2>
 			{#if editMode}
-				<!-- <IconButton borderColor="red-300" on:click={() => (editMode = false)}><X /></IconButton> -->
-				<!-- <IconButton on:click={addItem}><Plus /></IconButton> -->
-				<IconButton on:click={() => (editMode = false)} class="border-red-300"><X /></IconButton>
-				<IconButton on:click={handleConfirmEdit} class="border-green-300"><Check /></IconButton>
+				<span class="eyebrow hidden sm:block">Кои се показват</span>
+				<IconButton on:click={() => (editMode = false)} class="touch-danger"><X /></IconButton>
+				<IconButton on:click={handleConfirmEdit} class="touch-accent"><Check /></IconButton>
 			{:else}
 				<IconButton on:click={myposCheck}><Cog /></IconButton>
 				<IconButton on:click={() => (editMode = true)}><List /></IconButton>
 			{/if}
-		</h2>
-		<hr class="mb-2" />
-		{#if editMode}
-			{#each items as item, i}
-				<div class="mb-2">
-					<div class="md:flex md:items-center mb-2">
-						<label class="block text-white-500 font-bold">
-							<input
-								class="mr-2 leading-tight h-4 w-4"
-								type="checkbox"
-								bind:checked={item.active}
-							/>
-							<span class="text-xl"> {item.name} </span>
-						</label>
-					</div>
-				</div>
-			{/each}
-		{:else}
-			{#each items.filter((item) => item.active) as item, i}
-				<div class="m-2 {i % 2 == 0 ? 'bg-slate-800' : ''}">
-					<Item {item} handleClick={addItemToCart} />
-				</div>
-			{/each}
-		{/if}
-	</div>
+		</header>
 
-	<div class="w-96 border-l pl-4">
+		<div class="min-h-0 flex-1 overflow-y-auto pr-1">
+			{#if editMode}
+				{#each items as item}
+					<label
+						class="touch mb-1 min-h-[52px] cursor-pointer justify-start gap-3 px-4
+							{item.active ? '' : 'opacity-45'}"
+					>
+						<input
+							type="checkbox"
+							class="h-5 w-5 accent-[color:var(--amber)]"
+							bind:checked={item.active}
+						/>
+						<span class="display text-lg">{item.name}</span>
+					</label>
+				{/each}
+			{:else}
+				{#each items.filter((item) => item.active) as item}
+					<Item {item} handleClick={addItemToCart} />
+				{:else}
+					<p class="mt-16 text-center text-muted">Няма продукти в тази категория.</p>
+				{/each}
+			{/if}
+		</div>
+	</main>
+
+	<!-- Right: the bill -->
+	<aside class="flex w-[26rem] shrink-0 flex-col border-l border-rule bg-panel">
 		<Cart />
-	</div>
+	</aside>
 </div>

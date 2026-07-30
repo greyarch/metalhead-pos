@@ -5,8 +5,21 @@
 	import { pb } from '$lib/pb.js';
 	import { mypos, toReceipt } from '$lib/mypos.js';
 	import Calc from '$lib/components/Calc.svelte';
+	import { fly } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
 
 	updateStats();
+
+	// The total counts up rather than snapping, so a mis-tap is visible as movement.
+	const shownTotal = tweened(0, { duration: 220, easing: cubicOut });
+	$: shownTotal.set($cart.total);
+
+	const money = (n) => `€${Number(n).toFixed(2)}`;
+	const lineLabel = (i) =>
+		i.variant.name === 'default' ? i.name : `${i.name} (${i.variant.name})`;
+	const lineKey = (i) => `${i.name}|${i.variant.name}`;
 
 	function removeVariantFromCart(item) {
 		return () => {
@@ -15,6 +28,7 @@
 	}
 
 	let busy = false;
+	let showCalc = false;
 
 	async function submitOrder(orderType) {
 		let order;
@@ -69,75 +83,105 @@
 	}
 </script>
 
-<div class={busy ? 'opacity-50 pointer-events-none' : ''}>
-	<h2 class="text-2xl font-semibold mb-2">
-		<span class="text-orange-300">Сметка</span>
+<div class="flex h-full flex-col {busy ? 'pointer-events-none opacity-40' : ''}">
+	<header class="flex items-center gap-2 border-b border-rule px-4 py-[0.9rem]">
+		<h2 class="display flex-1 text-2xl text-amber">Сметка</h2>
 		{#if $cart.items.length}
-			<button class="float-right" on:click={cart.reset}>
+			<button
+				class="touch touch-danger h-11 min-h-0 w-11 text-muted"
+				aria-label="Изчисти сметката"
+				on:click={cart.reset}
+			>
 				<Trash />
 			</button>
 		{:else}
-			<span class="text-gray-400 float-right"
-				>Днес: €{$stats.todayTotal.toFixed(2)}</span
-			>
+			<span class="text-sm text-muted">
+				Днес <span class="display ml-1 text-base text-[color:var(--text)]"
+					>{money($stats.todayTotal)}</span
+				>
+			</span>
 		{/if}
-	</h2>
-	<hr class="pb-4" />
+	</header>
 
-	<!-- Cart Items -->
-	{#each $cart.items as cartItem}
-		<div>
-			<div class="flex justify-between">
-				<span class="font-medium">
-					<button class="text-red-400" on:click={removeVariantFromCart(cartItem)}>
-						<Trash />
+	<!-- Lines -->
+	<div class="min-h-0 flex-1 overflow-y-auto px-4">
+		{#each $cart.items as cartItem (lineKey(cartItem))}
+			<div
+				class="flex items-center gap-2 border-b border-rule py-2.5"
+				in:fly={{ y: -8, duration: 160 }}
+				animate:flip={{ duration: 180 }}
+			>
+				<div class="min-w-0 flex-1">
+					<div class="truncate font-semibold leading-tight">{lineLabel(cartItem)}</div>
+					<button
+						class="text-xs text-muted hover:text-[color:var(--danger)]"
+						on:click={removeVariantFromCart(cartItem)}
+					>
+						Премахни
 					</button>
-					<span>
-						{cartItem.name}{cartItem.variant.name !== 'default'
-							? ` (${cartItem.variant.name})`
-							: ''}
-					</span>
-				</span>
-				<!-- <span>x{cartItem.quantity}</span> -->
-				<input
-					type="number"
-					bind:value={cartItem.quantity}
-					on:input={(e) => cart.update(cartItem, e.target.value)}
-					on:focus={(e) => e.target.select()}
-					min="1"
-					class="w-16 text-right border rounded px-2 py-1 text-black"
-				/>
-			</div>
-			<div class="text-right text-gray-400">€{cartItem.variant.price * cartItem.quantity}</div>
-		</div>
-	{/each}
+				</div>
 
-	<!-- Total Price -->
-	<div class="border-t pt-4">
-		<div class="flex justify-between">
-			<span class="font-bold text-xl">Общо:</span>
-			<span class="text-xl">€{$cart.total.toFixed(2)}</span>
-		</div>
+				<div class="flex items-center gap-1">
+					<button
+						class="touch h-10 min-h-0 w-10 text-lg"
+						aria-label="По-малко"
+						on:click={() => cart.remove(cartItem)}>−</button
+					>
+					<input
+						type="number"
+						bind:value={cartItem.quantity}
+						on:input={(e) => cart.update(cartItem, e.target.value)}
+						on:focus={(e) => e.target.select()}
+						min="1"
+						aria-label="Количество"
+						class="h-10 w-12 rounded-[3px] border border-rule bg-ink text-center font-semibold"
+					/>
+					<button
+						class="touch h-10 min-h-0 w-10 text-lg"
+						aria-label="Още"
+						on:click={() => cart.update(cartItem, cartItem.quantity + 1)}>+</button
+					>
+				</div>
+
+				<div class="display w-20 text-right text-lg">
+					{money(cartItem.variant.price * cartItem.quantity)}
+				</div>
+			</div>
+		{/each}
 	</div>
 
-	{#if $cart.items.length}
-		<div class="flex justify-between border-t pt-4 mt-4">
-			<button
-				on:click={handleSubmit('cash')}
-				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">В брой</button
-			>
-			<button
-				on:click={handleSubmit('card')}
-				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">С карта</button
-			>
-			<!-- <button
-				on:click={handleSubmit('register')}
-				class="mr-2 p-2 rounded-md border border-gray-300 hover:bg-gray-100">Каса</button
-			> -->
+	<!-- Total and payment: the part someone reads from a metre away -->
+	<footer class="max-h-[70%] shrink-0 overflow-y-auto border-t border-rule px-4 py-4">
+		<div class="mb-3 flex items-baseline justify-between">
+			<span class="eyebrow">Общо</span>
+			<span class="display text-5xl leading-none text-amber">{money($shownTotal)}</span>
 		</div>
-		<br />
-		<Calc />
-	{/if}
+
+		{#if $cart.items.length}
+			<div class="grid grid-cols-2 gap-2">
+				<button class="touch touch-accent h-16 text-lg" on:click={handleSubmit('cash')}>
+					В брой
+				</button>
+				<button class="touch touch-accent h-16 text-lg" on:click={handleSubmit('card')}>
+					С карта
+				</button>
+			</div>
+
+			<button
+				class="mt-3 w-full text-xs uppercase tracking-widest text-muted hover:text-[color:var(--text)]"
+				on:click={() => (showCalc = !showCalc)}
+			>
+				{showCalc ? 'Скрий ресто' : 'Изчисли ресто'}
+			</button>
+			{#if showCalc}
+				<div transition:fly={{ y: 12, duration: 160 }}>
+					<Calc />
+				</div>
+			{/if}
+		{:else}
+			<p class="py-3 text-center text-sm text-muted">Избери продукт, за да започнеш.</p>
+		{/if}
+	</footer>
 </div>
 
 <style>

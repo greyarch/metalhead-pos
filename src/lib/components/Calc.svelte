@@ -1,8 +1,9 @@
 <script>
 	import cart from '$lib/stores/cart.js';
 
-	let input = 0;
+	let input = '';
 	$: result = Number(input) - $cart.total;
+	$: short = Number(input) > 0 && result < 0;
 
 	function handleClick(value) {
 		if (value === 'C') {
@@ -13,22 +14,32 @@
 	}
 </script>
 
-<div class="p-4 rounded-lg shadow-md">
-	<div class="w-full grid grid-cols-3 gap-2 text-center text-lg">
+<div class="mt-3 rounded-[3px] border border-rule bg-ink p-3">
+	<div class="mb-3 flex items-center gap-3">
 		<input
 			type="text"
-			id="display"
-			class="mb-4 p-2 text-black border border-gray-700 rounded"
-			placeholder="0"
+			inputmode="decimal"
+			class="h-12 w-28 rounded-[3px] border border-rule bg-raised px-3 text-right text-lg font-semibold"
+			placeholder="Дадени"
+			aria-label="Дадени пари"
 			bind:value={input}
 		/>
-		<span class="p-3">- {$cart.total.toFixed(2)}</span>
-		<span class="p-3">{input ? `= ${result.toFixed(2)}` : ''}</span>
+		<div class="min-w-0 flex-1 text-right">
+			<div class="eyebrow">Ресто</div>
+			<div
+				class="display text-3xl leading-none {short
+					? 'text-[color:var(--danger)]'
+					: 'text-[color:var(--text)]'}"
+			>
+				{input ? `€${result.toFixed(2)}` : '—'}
+			</div>
+		</div>
 	</div>
-	<div class="grid grid-cols-3 gap-2">
+
+	<div class="grid grid-cols-3 gap-1.5">
 		{#each ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', 'C'] as button}
 			<button
-				class="p-3 text-lg bg-gray-700 hover:bg-gray-500 rounded"
+				class="touch min-h-[48px] text-lg {button === 'C' ? 'touch-danger text-muted' : ''}"
 				on:click={() => handleClick(button)}>{button}</button
 			>
 		{/each}

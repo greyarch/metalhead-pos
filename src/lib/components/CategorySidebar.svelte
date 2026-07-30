@@ -5,20 +5,33 @@
 
 	export let categories = [];
 	export let selectedCategory = '';
-
-	function selectCategory(e) {
-		dispatch('select', { category: e.target.innerText });
-	}
 </script>
 
-<ul>
+<nav class="flex flex-col gap-1">
 	{#each categories as category}
-		<li class="mb-8">
-			<span
-				class="text-white hover:underline cursor-pointer p-4 rounded-md
-                    {selectedCategory === category ? 'bg-gray-700' : ''}"
-				on:click={selectCategory}>{category}</span
-			>
-		</li>
+		<button
+			class="touch display relative justify-start px-4 text-lg
+				{selectedCategory === category ? 'is-active' : ''}"
+			aria-current={selectedCategory === category}
+			on:click={() => dispatch('select', { category })}
+		>
+			{category}
+		</button>
 	{/each}
-</ul>
+</nav>
+
+<style>
+	/* The active category carries the accent as a bar, not a fill, so it does not
+	   compete with the amber payment buttons on the other side of the screen. */
+	.is-active {
+		background: var(--raised-hi);
+		color: var(--amber);
+	}
+	.is-active::before {
+		content: '';
+		position: absolute;
+		inset: -1px auto -1px -1px;
+		width: 4px;
+		background: var(--amber);
+	}
+</style>

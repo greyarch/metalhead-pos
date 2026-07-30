@@ -12,27 +12,27 @@
 	}
 
 	getStats();
+
+	const money = (n) => `€${Number(n).toFixed(2)}`;
+	$: split = [
+		{ label: 'В брой', value: today.cash },
+		{ label: 'Карта', value: today.card },
+		{ label: 'Каса', value: today.register }
+	];
 </script>
 
-<div class="px-4 py-4">
-	<table class="table-auto bg-gray-800 rounded-md shadow-md">
-		<thead>
-			<tr>
-				<th class="px-4 py-2"></th>
-				<th class="px-4 py-2">Общо</th>
-				<th class="px-4 py-2">В брой</th>
-				<th class="px-4 py-2">Карта</th>
-				<th class="px-4 py-2">Каса</th>
-			</tr>
-		</thead>
-		<tbody>
-			<tr>
-				<th class="border px-4 py-2 text-left" scope="row">Днес</th>
-				<td class="border px-4 py-2">{today.total.toFixed(2)}</td>
-				<td class="border px-4 py-2">{today.cash.toFixed(2)}</td>
-				<td class="border px-4 py-2">{today.card.toFixed(2)}</td>
-				<td class="border px-4 py-2">{today.register.toFixed(2)}</td>
-			</tr>
-		</tbody>
-	</table>
-</div>
+<main class="h-screen bg-ink p-8">
+	<a href="/" class="eyebrow mb-8 inline-block hover:text-[color:var(--text)]">← Към касата</a>
+
+	<h1 class="eyebrow mb-1">Оборот днес</h1>
+	<p class="display mb-10 text-7xl leading-none text-amber">{money(today.total)}</p>
+
+	<div class="grid max-w-2xl grid-cols-3 gap-px bg-rule">
+		{#each split as { label, value }}
+			<div class="bg-panel px-5 py-4">
+				<div class="eyebrow mb-1">{label}</div>
+				<div class="display text-3xl leading-none">{money(value)}</div>
+			</div>
+		{/each}
+	</div>
+</main>
