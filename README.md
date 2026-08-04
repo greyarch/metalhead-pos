@@ -37,6 +37,30 @@ migrations as applied; replacing them makes it and a fresh install build their
 schemas from different files. From the first deploy on, migrations only get
 appended.
 
+## Seeding the menu onto another instance
+
+[scripts/seed-remote.mjs](scripts/seed-remote.mjs) copies categories and products
+from one PocketBase to another — normally this laptop to the VPS. Orders, the
+audit log and users are not copied; they belong to the instance they happened on.
+
+```bash
+SRC_EMAIL=admin@local.dev SRC_PASSWORD=... \
+  DST_URL=https://pos.example.com DST_EMAIL=... DST_PASSWORD=... \
+  node scripts/seed-remote.mjs --dry-run     # counts, new categories, a sample
+
+# drop --dry-run to write; add --overwrite to also refresh what is already there
+```
+
+Category ids differ between instances and every variant points at one, so the
+ids are remapped by category name on the way over. Category order comes across
+with them.
+
+Re-running creates nothing. `--overwrite` refreshes only the products that
+actually differ, so a sync does not put a row per product in the target's audit
+log. Products are matched by name, so the script refuses to run if two source
+products share one — they would land on the same target row and overwrite each
+other on every sync.
+
 ## Audit
 
 [pb_hooks/audit.pb.js](pb_hooks/audit.pb.js) records every catalogue change that
