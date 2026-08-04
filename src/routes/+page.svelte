@@ -103,6 +103,29 @@
 		.map((item) => ({ ...item, variants: item.variants.filter((v) => v.active !== false) }))
 		.filter((item) => item.variants.length);
 
+	// Edit mode lists one row per variant, which runs to a couple of hundred in a
+	// category like Наливно — too many to thumb through without a filter.
+	let editFilter = '';
+	/** 'all' | 'shown' | 'hidden' */
+	let editShow = 'all';
+
+	$: editRows = items.flatMap((item) => item.variants.map((variant) => ({ item, variant })));
+	$: shownRows = editRows.filter(({ item, variant }) => {
+		const q = editFilter.trim().toLowerCase();
+		if (
+			q &&
+			!item.name.toLowerCase().includes(q) &&
+			!String(variant.name).toLowerCase().includes(q)
+		)
+			return false;
+		// Deliberately the saved state, not the pending one: filtering on the tick
+		// itself would make a row vanish the moment you ticked it, which is no use
+		// when the job is working through a list of hidden things.
+		if (editShow === 'shown') return variant.active !== false;
+		if (editShow === 'hidden') return variant.active === false;
+		return true;
+	});
+
 	function addItemToCart(item, variant) {
 		return () => {
 			cart.add({
@@ -139,12 +162,16 @@
 
 	function startEdit() {
 		pendingActive = {};
+		editFilter = '';
+		editShow = 'all';
 		orderSnapshot = catRecords.map((c) => c.id);
 		editMode = true;
 	}
 
 	function cancelEdit() {
 		pendingActive = {};
+		editFilter = '';
+		editShow = 'all';
 		catRecords = orderSnapshot.map((id) => catRecords.find((c) => c.id === id)).filter(Boolean);
 		editMode = false;
 	}
@@ -205,6 +232,8 @@
 
 	async function handleConfirmEdit() {
 		editMode = false;
+		editFilter = '';
+		editShow = 'all';
 		await saveEdits();
 	}
 
@@ -306,6 +335,46 @@
 			{/if}
 		</header>
 
+		{#if editMode && editRows.length}
+			<div class="mb-3 flex items-center gap-2">
+				<input
+					class="h-12 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-4"
+					bind:value={editFilter}
+					placeholder="Търси по име или размер…"
+					aria-label="Търси в списъка"
+				/>
+				{#if editFilter}
+					<button
+						class="touch h-12 min-h-0 w-12 shrink-0 text-muted"
+						aria-label="Изчисти търсенето"
+						on:click={() => (editFilter = '')}
+					>
+						<X />
+					</button>
+				{/if}
+
+				<div class="flex shrink-0 gap-1">
+					{#each [['all', 'Всички'], ['shown', 'Показани'], ['hidden', 'Скрити']] as [value, label]}
+						<button
+							class="touch h-12 min-h-0 px-3 text-sm {editShow === value
+								? 'border-amber-dim text-amber'
+								: 'text-muted'}"
+							aria-pressed={editShow === value}
+							on:click={() => (editShow = value)}
+						>
+							{label}
+						</button>
+					{/each}
+				</div>
+
+				<span class="eyebrow shrink-0 whitespace-nowrap">
+					{shownRows.length === editRows.length
+						? `${editRows.length} реда`
+						: `${shownRows.length} от ${editRows.length}`}
+				</span>
+			</div>
+		{/if}
+
 		<div class="min-h-0 flex-1 overflow-y-auto pr-1">
 			{#if !categories.length}
 				<p class="mt-16 text-center text-muted">
@@ -319,35 +388,39 @@
 			{:else if editMode}
 				<!-- One row per variant: a beer can be on tap here and in a can elsewhere,
 				     so each is shown and hidden on its own. -->
-				{#each items as item}
-					{#each item.variants as variant}
-						<div class="mb-1 flex items-center gap-1">
-							<label
-								class="touch min-h-[52px] flex-1 cursor-pointer justify-start gap-3 px-4
+				{#each shownRows as { item, variant } (item.id + '|' + variant.name)}
+					<div class="mb-1 flex items-center gap-1">
+						<label
+							class="touch min-h-[52px] flex-1 cursor-pointer justify-start gap-3 px-4
 									{isShown(item.id, variant) ? '' : 'opacity-45'}"
-							>
-								<input
-									type="checkbox"
-									class="h-5 w-5 accent-[color:var(--amber)]"
-									checked={isShown(item.id, variant)}
-									on:change={() => toggleVariant(item.id, variant)}
-								/>
-								<span class="display truncate text-lg">{item.name}</span>
-								{#if variant.name !== 'default'}
-									<span class="shrink-0 text-sm text-muted">{variant.name}</span>
-								{/if}
-								<span class="ml-auto shrink-0 text-sm text-muted">€{variant.price}</span>
-							</label>
-							<IconButton
-								on:click={() => {
-									editProduct = item;
-									showProductForm = true;
-								}}
-							>
-								<Pencil />
-							</IconButton>
-						</div>
-					{/each}
+						>
+							<input
+								type="checkbox"
+								class="h-5 w-5 accent-[color:var(--amber)]"
+								checked={isShown(item.id, variant)}
+								on:change={() => toggleVariant(item.id, variant)}
+							/>
+							<span class="display truncate text-lg">{item.name}</span>
+							{#if variant.name !== 'default'}
+								<span class="shrink-0 text-sm text-muted">{variant.name}</span>
+							{/if}
+							<span class="ml-auto shrink-0 text-sm text-muted">€{variant.price}</span>
+						</label>
+						<IconButton
+							on:click={() => {
+								editProduct = item;
+								showProductForm = true;
+							}}
+						>
+							<Pencil />
+						</IconButton>
+					</div>
+				{:else}
+					<p class="mt-16 text-center text-muted">
+						{editFilter || editShow !== 'all'
+							? 'Нищо не съвпада с търсенето.'
+							: 'Няма продукти в тази категория.'}
+					</p>
 				{/each}
 			{:else}
 				{#each visibleItems as item, i}
