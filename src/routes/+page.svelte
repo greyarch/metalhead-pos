@@ -47,10 +47,22 @@
 			pb.collection('products').getFullList()
 		]);
 
+		// A product appears in every category its variants point at, carrying only
+		// the variants that belong there — draught sizes under Наливно, the can
+		// under Кенчета, one product, one price list.
 		const catName = Object.fromEntries(cats.map((c) => [c.id, c.name]));
 		prdts = Object.fromEntries(cats.map((c) => [c.name, []]));
-		for (const { id, name, active, category, variants } of products) {
-			prdts[catName[category]]?.push({ id, name, active, category, variants });
+		for (const { id, name, variants } of products) {
+			const byCategory = new Map();
+			for (const v of variants ?? []) {
+				if (!byCategory.has(v.category)) byCategory.set(v.category, []);
+				byCategory.get(v.category).push(v);
+			}
+			for (const [categoryId, own] of byCategory) {
+				// a variant left pointing at a deleted category has nowhere to show
+				if (!catName[categoryId]) continue;
+				prdts[catName[categoryId]].push({ id, name, variants: own, all: variants });
+			}
 		}
 
 		catRecords = cats;
@@ -69,41 +81,27 @@
 	$: selectedCategoryId = catRecords.find((c) => c.name === selectedCategory)?.id ?? '';
 
 	async function handleProductSaved(e) {
-		const { record, categoryId, created } = e.detail;
+		const { categoryId, created } = e.detail;
 		showProductForm = false;
 		editProduct = null;
 
+		// A saved product can land in several categories at once, so rebuild rather
+		// than trying to splice it into place. Pending visibility toggles live in
+		// their own map and survive the reload.
+		await loadProducts();
 		if (created) {
-			// reload: the product may have brought a brand new category with it
-			await loadProducts();
 			const saved = catRecords.find((c) => c.id === categoryId);
 			if (saved) selectedCategory = saved.name;
-			return;
 		}
-
-		// Editing happens inside edit mode, where the visibility checkboxes may hold
-		// changes not yet written. Merge in place rather than reloading over them.
-		const catName = Object.fromEntries(catRecords.map((c) => [c.id, c.name]));
-		let active = record.active;
-		for (const list of Object.values(prdts)) {
-			const i = list.findIndex((p) => p.id === record.id);
-			if (i > -1) {
-				active = list[i].active;
-				list.splice(i, 1);
-			}
-		}
-		prdts[catName[record.category]]?.push({
-			id: record.id,
-			name: record.name,
-			active,
-			category: record.category,
-			variants: record.variants
-		});
-		prdts = prdts;
-		selectedCategory = catName[record.category] ?? selectedCategory;
 	}
 
 	$: items = (prdts[selectedCategory] ?? []).sort(sortByName);
+
+	// On the sale screen a product shows only its visible variants, and disappears
+	// entirely once none of them are on.
+	$: visibleItems = items
+		.map((item) => ({ ...item, variants: item.variants.filter((v) => v.active !== false) }))
+		.filter((item) => item.variants.length);
 
 	function addItemToCart(item, variant) {
 		return () => {
@@ -120,25 +118,33 @@
 		selectedCategory = e.detail.category;
 	}
 
-	/** State as it was when edit mode opened, so cancel can restore it. */
-	let activeSnapshot = {};
+	/**
+	 * Visibility changes waiting behind the tick, keyed product+variant. Only
+	 * differences live here, so cancelling is just throwing the map away.
+	 */
+	let pendingActive = {};
 	let orderSnapshot = [];
 
-	function eachProduct() {
-		return Object.values(prdts).flat();
+	const variantKey = (productId, variant) => `${productId}|${variant.name}`;
+	const isShown = (productId, variant) =>
+		pendingActive[variantKey(productId, variant)] ?? variant.active !== false;
+
+	function toggleVariant(productId, variant) {
+		const key = variantKey(productId, variant);
+		const next = !isShown(productId, variant);
+		if (next === (variant.active !== false)) delete pendingActive[key];
+		else pendingActive[key] = next;
+		pendingActive = pendingActive;
 	}
 
 	function startEdit() {
-		activeSnapshot = Object.fromEntries(eachProduct().map((p) => [p.id, p.active]));
+		pendingActive = {};
 		orderSnapshot = catRecords.map((c) => c.id);
 		editMode = true;
 	}
 
 	function cancelEdit() {
-		for (const p of eachProduct()) {
-			if (p.id in activeSnapshot) p.active = activeSnapshot[p.id];
-		}
-		prdts = prdts;
+		pendingActive = {};
 		catRecords = orderSnapshot.map((id) => catRecords.find((c) => c.id === id)).filter(Boolean);
 		editMode = false;
 	}
@@ -155,19 +161,42 @@
 	async function saveEdits() {
 		// Only what actually changed: writing everything put no-op rows in the audit
 		// log, and toggles made before switching category were never saved at all.
-		const products = eachProduct().filter((p) => activeSnapshot[p.id] !== p.active);
+		const touched = new Set(Object.keys(pendingActive).map((k) => k.split('|')[0]));
 		const cats = catRecords.filter((c, i) => orderSnapshot[i] !== c.id);
-		if (!products.length && !cats.length) return;
+		if (!touched.size && !cats.length) return;
+
+		// Visibility lives inside the product's variants, so a change rewrites that
+		// product's whole list with the pending flags applied.
+		const products = [];
+		for (const id of touched) {
+			const slice = Object.values(prdts)
+				.flat()
+				.find((p) => p.id === id);
+			if (!slice) continue;
+			products.push({
+				id,
+				variants: slice.all.map((v) => ({ ...v, active: isShown(id, v) }))
+			});
+		}
 
 		try {
 			await Promise.all([
-				...products.map(({ id, active }) => pb.collection('products').update(id, { active })),
+				...products.map(({ id, variants }) => pb.collection('products').update(id, { variants })),
 				// sort is the position itself, so the saved order is what is on screen
-				...cats.map((c, i) =>
+				...cats.map((c) =>
 					pb.collection('categories').update(c.id, { sort: catRecords.indexOf(c) })
 				)
 			]);
 			for (const c of cats) c.sort = catRecords.indexOf(c);
+			for (const { id, variants } of products) {
+				for (const slice of Object.values(prdts).flat()) {
+					if (slice.id !== id) continue;
+					slice.all = variants;
+					slice.variants = variants.filter((v) => slice.variants.some((o) => o.name === v.name));
+				}
+			}
+			prdts = prdts;
+			pendingActive = {};
 		} catch (error) {
 			console.error(error);
 			alert(error);
@@ -190,7 +219,7 @@
 			// leaving a dead button they cannot explain.
 			alert(
 				`Категорията „${cat.name}“ не е празна.\n\n` +
-					`Премести продуктите в друга категория (моливчето до всеки продукт), после я изтрий.`
+					`Премести цените ѝ в друга категория (моливчето до всеки ред), после я изтрий.`
 			);
 			return;
 		}
@@ -288,31 +317,40 @@
 					{/if}
 				</p>
 			{:else if editMode}
+				<!-- One row per variant: a beer can be on tap here and in a can elsewhere,
+				     so each is shown and hidden on its own. -->
 				{#each items as item}
-					<div class="mb-1 flex items-center gap-1">
-						<label
-							class="touch min-h-[52px] flex-1 cursor-pointer justify-start gap-3 px-4
-								{item.active ? '' : 'opacity-45'}"
-						>
-							<input
-								type="checkbox"
-								class="h-5 w-5 accent-[color:var(--amber)]"
-								bind:checked={item.active}
-							/>
-							<span class="display text-lg">{item.name}</span>
-						</label>
-						<IconButton
-							on:click={() => {
-								editProduct = item;
-								showProductForm = true;
-							}}
-						>
-							<Pencil />
-						</IconButton>
-					</div>
+					{#each item.variants as variant}
+						<div class="mb-1 flex items-center gap-1">
+							<label
+								class="touch min-h-[52px] flex-1 cursor-pointer justify-start gap-3 px-4
+									{isShown(item.id, variant) ? '' : 'opacity-45'}"
+							>
+								<input
+									type="checkbox"
+									class="h-5 w-5 accent-[color:var(--amber)]"
+									checked={isShown(item.id, variant)}
+									on:change={() => toggleVariant(item.id, variant)}
+								/>
+								<span class="display truncate text-lg">{item.name}</span>
+								{#if variant.name !== 'default'}
+									<span class="shrink-0 text-sm text-muted">{variant.name}</span>
+								{/if}
+								<span class="ml-auto shrink-0 text-sm text-muted">€{variant.price}</span>
+							</label>
+							<IconButton
+								on:click={() => {
+									editProduct = item;
+									showProductForm = true;
+								}}
+							>
+								<Pencil />
+							</IconButton>
+						</div>
+					{/each}
 				{/each}
 			{:else}
-				{#each items.filter((item) => item.active) as item, i}
+				{#each visibleItems as item, i}
 					<Item {item} alt={i % 2 === 1} handleClick={addItemToCart} />
 				{:else}
 					<p class="mt-16 text-center text-muted">Няма продукти в тази категория.</p>

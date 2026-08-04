@@ -37,35 +37,6 @@ migrations as applied; replacing them makes it and a fresh install build their
 schemas from different files. From the first deploy on, migrations only get
 appended.
 
-## Importing the catalogue from Supabase
-
-[scripts/migrate-from-supabase.mjs](scripts/migrate-from-supabase.mjs) copies
-categories, products and prices out of the old Supabase project. It flattens the
-`products_variants` join into the `variants` JSON, sorts each product's sizes
-cheapest-first, and carries `active` across. Orders are not copied.
-
-```bash
-SUPABASE_URL=https://xxx.supabase.co SUPABASE_KEY=<service_role key> \
-  node scripts/migrate-from-supabase.mjs --dry-run          # prints the whole menu
-
-SUPABASE_URL=... SUPABASE_KEY=... \
-  PB_URL=http://127.0.0.1:8090 PB_EMAIL=... PB_PASSWORD=... \
-  node scripts/migrate-from-supabase.mjs                    # writes
-```
-
-**The anon key alone reads nothing.** RLS only exposes these tables to a
-signed-in user, the way the old till read them, so pass `SUPABASE_EMAIL` and
-`SUPABASE_PASSWORD` for a till user alongside it. The alternative is the
-`service_role` key (Supabase dashboard → Project settings → API), which ignores
-RLS and needs no login — do not commit it. An empty read fails loudly rather
-than reporting that it imported nothing.
-
-Re-running is safe: categories and products already present by name are left
-alone, so an interrupted import can just be repeated. Category order does not
-exist in Supabase — set it by dragging the rail in edit mode afterwards.
-
-Delete this script once the real menu is in.
-
 ## Audit
 
 [pb_hooks/audit.pb.js](pb_hooks/audit.pb.js) records every catalogue change that

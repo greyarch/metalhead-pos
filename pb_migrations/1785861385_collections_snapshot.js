@@ -809,7 +809,7 @@ migrate((app) => {
     },
     {
       "createRule": "@request.auth.id != \"\"",
-      "deleteRule": "@request.auth.id != \"\" && @collection.products.category != id",
+      "deleteRule": "@request.auth.id != \"\" && @collection.products.variants !~ id",
       "fields": [
         {
           "autogeneratePattern": "[a-z0-9]{15}",
@@ -919,30 +919,6 @@ migrate((app) => {
           "required": true,
           "system": false,
           "type": "text"
-        },
-        {
-          "cascadeDelete": false,
-          "collectionId": "pbc_3292755704",
-          "help": "",
-          "hidden": false,
-          "id": "relation105650625",
-          "maxSelect": 1,
-          "minSelect": 0,
-          "name": "category",
-          "presentable": false,
-          "required": true,
-          "system": false,
-          "type": "relation"
-        },
-        {
-          "help": "",
-          "hidden": false,
-          "id": "bool1260321794",
-          "name": "active",
-          "presentable": false,
-          "required": false,
-          "system": false,
-          "type": "bool"
         },
         {
           "help": "",

@@ -8,9 +8,9 @@
 
 	const dispatch = createEventDispatcher();
 
-	/** @type {{id: string, name: string}[]} */
+	/** @type {{id: string, name: string, sort?: number}[]} */
 	export let categories = [];
-	/** Category the till is currently showing — the likely one for a new product. */
+	/** Category the till is showing — where a new variant starts out. */
 	export let categoryId = '';
 	/** Existing product to edit. Null means this is a new one. */
 	export let product = null;
@@ -20,21 +20,30 @@
 
 	let name = product?.name ?? '';
 	let newCategory = '';
-	// 'default' is how a single-variant product is stored; staff see an empty box.
+	// 'default' is how an only-one-way-to-buy-it product is stored; staff see a
+	// blank box rather than the word.
 	let variants = product?.variants?.length
 		? product.variants.map((v) => ({
 				name: v.name === 'default' ? '' : v.name,
-				price: String(v.price)
+				price: String(v.price),
+				category: v.category ?? categoryId,
+				active: v.active !== false
 		  }))
-		: [{ name: '', price: '' }];
+		: [{ name: '', price: '', category: categoryId, active: true }];
 	let error = '';
 	let busy = false;
+
+	$: addingCategory = variants.some((v) => v.category === NEW_CATEGORY);
 
 	// Staff type on a numeric keypad where the decimal key may be a comma.
 	const toPrice = (raw) => Number(String(raw).replace(',', '.').trim());
 
 	function addVariant() {
-		variants = [...variants, { name: '', price: '' }];
+		const last = variants[variants.length - 1];
+		variants = [
+			...variants,
+			{ name: '', price: '', category: last?.category ?? categoryId, active: true }
+		];
 	}
 
 	function removeVariant(i) {
@@ -53,72 +62,69 @@
 	async function save() {
 		error = '';
 
-		// Every row counts. Blanking a price used to delete that size silently, so
-		// clearing one to retype it and saving lost it — use the bin to remove a size.
+		// Every row counts. Blanking a price used to delete that variant silently,
+		// so clearing one to retype it lost it — the bin is how you remove a row.
+		const blank = variants.some((v) => String(v.price).trim() === '');
 		const clean = variants.map((v) => ({
 			name: v.name.trim() || 'default',
-			price: toPrice(v.price)
+			price: toPrice(v.price),
+			category: v.category,
+			active: v.active
 		}));
-		const blank = variants.some((v) => String(v.price).trim() === '');
-
-		const addingCategory = categoryId === NEW_CATEGORY;
 
 		if (!name.trim()) return (error = 'Въведи име на продукта.');
-		if (!categoryId) return (error = 'Избери категория.');
-		if (addingCategory && !newCategory.trim()) return (error = 'Въведи име на категорията.');
+		if (!clean.length) return (error = 'Въведи поне една цена.');
+		if (clean.some((v) => !v.category)) return (error = 'Всеки ред иска категория.');
+		if (addingCategory && !newCategory.trim()) return (error = 'Въведи име на новата категория.');
 		if (
 			addingCategory &&
 			categories.some((c) => c.name.toLowerCase() === newCategory.trim().toLowerCase())
 		)
 			return (error = 'Вече има категория с това име.');
-		if (blank) return (error = 'Всеки размер иска цена. Празен ред се маха с кошчето.');
-		if (!clean.length) return (error = 'Въведи поне една цена.');
+		if (blank) return (error = 'Всеки ред иска цена. Празен ред се маха с кошчето.');
 		if (clean.some((v) => !Number.isFinite(v.price) || v.price <= 0))
 			return (error = 'Цената трябва да е число по-голямо от нула.');
 		if (new Set(clean.map((v) => v.name)).size !== clean.length)
-			return (error = 'Има два еднакви размера.');
+			return (error = 'Има два реда с еднакво име.');
 
 		// Nothing to write, and an unchanged save would still land in the audit log.
-		if (
-			editing &&
-			name.trim() === product.name &&
-			categoryId === product.category &&
-			JSON.stringify(clean) === JSON.stringify(product.variants)
-		) {
+		if (editing && name.trim() === product.name && sameVariants(clean, product.variants)) {
 			return dispatch('close');
 		}
 
 		busy = true;
 		try {
-			let target = categoryId;
-
 			if (addingCategory) {
 				const sort = Math.max(0, ...categories.map((c) => c.sort ?? 0)) + 1;
 				const created = await pb
 					.collection('categories')
 					.create({ name: newCategory.trim(), sort });
-				// Staff cannot delete, so if the product below fails, point the form at
-				// the category that now exists rather than creating a second one on retry.
-				target = created.id;
+				// Staff cannot delete categories that are in use, so if the product below
+				// fails, point the rows at the one that now exists rather than making a
+				// second on retry.
+				for (const v of clean) if (v.category === NEW_CATEGORY) v.category = created.id;
+				for (const v of variants) if (v.category === NEW_CATEGORY) v.category = created.id;
 				categories = [...categories, created];
-				categoryId = created.id;
 				newCategory = '';
 			}
 
-			const fields = { name: name.trim(), category: target, variants: clean };
-
-			// `active` is left alone on edit: it belongs to the checkbox in the list,
-			// which may have unsaved changes waiting behind the tick.
+			const fields = { name: name.trim(), variants: clean };
 			const record = editing
 				? await pb.collection('products').update(product.id, fields)
-				: await pb.collection('products').create({ ...fields, active: true });
+				: await pb.collection('products').create(fields);
 
-			dispatch('saved', { record, categoryId: target, created: !editing });
+			dispatch('saved', { record, categoryId: clean[0].category, created: !editing });
 		} catch (e) {
 			console.error(e);
 			error = `Не беше запазено. ${e.message ?? ''}`;
 		}
 		busy = false;
+	}
+
+	function sameVariants(a, b) {
+		const norm = (list) =>
+			JSON.stringify((list ?? []).map((v) => [v.name, v.price, v.category, v.active !== false]));
+		return norm(a) === norm(b);
 	}
 </script>
 
@@ -129,7 +135,7 @@
 	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
 	on:click|self={() => dispatch('close')}
 >
-	<div class="max-h-full w-[34rem] overflow-y-auto border border-rule bg-panel">
+	<div class="max-h-full w-[40rem] overflow-y-auto border border-rule bg-panel">
 		<header class="flex items-center gap-2 border-b border-rule px-5 py-4">
 			<h2 class="display flex-1 text-2xl text-amber">
 				{editing ? 'Редакция на продукт' : 'Нов продукт'}
@@ -145,7 +151,7 @@
 
 		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 		<div class="px-5 py-4" on:input={() => (error = '')}>
-			<label class="mb-4 block">
+			<label class="mb-5 block">
 				<span class="eyebrow mb-1 block">Име</span>
 				<!-- svelte-ignore a11y-autofocus -->
 				<input
@@ -156,79 +162,87 @@
 				/>
 			</label>
 
-			<label class="mb-2 block">
-				<span class="eyebrow mb-1 block">Категория</span>
-				<select
-					class="h-14 w-full rounded-[3px] border border-rule bg-raised px-4 text-lg"
-					bind:value={categoryId}
-				>
-					{#each categories as category}
-						<option value={category.id}>{category.name}</option>
-					{/each}
-					<option value={NEW_CATEGORY}>+ Нова категория…</option>
-				</select>
-			</label>
-
-			{#if categoryId === NEW_CATEGORY}
-				<input
-					class="mb-5 h-14 w-full rounded-[3px] border border-amber-dim bg-raised px-4 text-lg"
-					bind:value={newCategory}
-					placeholder="Име на новата категория"
-				/>
-			{:else}
-				<div class="mb-5" />
-			{/if}
-
-			<div class="eyebrow mb-2">Размери и цени</div>
+			<div class="eyebrow mb-2">Варианти, цени и категории</div>
 			{#each variants as variant, i}
-				<div class="mb-2 flex items-stretch gap-2">
-					<input
-						class="h-14 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-4"
-						bind:value={variant.name}
-						placeholder="Размер (напр. 0.5)"
-					/>
-					<input
-						class="h-14 w-24 rounded-[3px] border border-rule bg-raised px-3 text-right text-lg"
-						inputmode="decimal"
-						bind:value={variant.price}
-						placeholder="€"
-					/>
-					<!-- This order is the order of the buttons on the sale screen. -->
-					<div class="flex w-9 shrink-0 flex-col gap-1">
+				<div class="mb-2 rounded-[3px] border border-rule p-2">
+					<div class="mb-2 flex items-stretch gap-2">
+						<input
+							class="h-12 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-4"
+							bind:value={variant.name}
+							placeholder="Вариант (напр. 0.5L, кенче)"
+						/>
+						<input
+							class="h-12 w-24 rounded-[3px] border border-rule bg-raised px-3 text-right text-lg"
+							inputmode="decimal"
+							bind:value={variant.price}
+							placeholder="€"
+						/>
+						<div class="flex w-9 shrink-0 flex-col gap-1">
+							<button
+								class="touch min-h-0 flex-1 disabled:pointer-events-none disabled:opacity-25"
+								aria-label="Нагоре"
+								disabled={i === 0}
+								on:click={() => moveVariant(i, -1)}
+							>
+								<ChevronUp />
+							</button>
+							<button
+								class="touch min-h-0 flex-1 disabled:pointer-events-none disabled:opacity-25"
+								aria-label="Надолу"
+								disabled={i === variants.length - 1}
+								on:click={() => moveVariant(i, 1)}
+							>
+								<ChevronDown />
+							</button>
+						</div>
 						<button
-							class="touch min-h-0 flex-1 disabled:pointer-events-none disabled:opacity-25"
-							aria-label="Нагоре"
-							disabled={i === 0}
-							on:click={() => moveVariant(i, -1)}
+							class="touch touch-danger h-12 w-12 shrink-0 text-muted disabled:pointer-events-none disabled:opacity-30"
+							aria-label="Премахни реда"
+							disabled={variants.length === 1}
+							on:click={() => removeVariant(i)}
 						>
-							<ChevronUp />
-						</button>
-						<button
-							class="touch min-h-0 flex-1 disabled:pointer-events-none disabled:opacity-25"
-							aria-label="Надолу"
-							disabled={i === variants.length - 1}
-							on:click={() => moveVariant(i, 1)}
-						>
-							<ChevronDown />
+							<Trash />
 						</button>
 					</div>
-					<button
-						class="touch touch-danger h-14 w-12 shrink-0 text-muted disabled:pointer-events-none disabled:opacity-30"
-						aria-label="Премахни размер"
-						disabled={variants.length === 1}
-						on:click={() => removeVariant(i)}
-					>
-						<Trash />
-					</button>
+
+					<div class="flex items-stretch gap-2">
+						<select
+							class="h-12 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-3"
+							bind:value={variant.category}
+							aria-label="Категория за този вариант"
+						>
+							{#each categories as category}
+								<option value={category.id}>{category.name}</option>
+							{/each}
+							<option value={NEW_CATEGORY}>+ Нова категория…</option>
+						</select>
+						<label class="touch h-12 min-h-0 w-40 shrink-0 cursor-pointer justify-start gap-2 px-3">
+							<input
+								type="checkbox"
+								class="h-5 w-5 accent-[color:var(--amber)]"
+								bind:checked={variant.active}
+							/>
+							<span class="text-sm">Показвай</span>
+						</label>
+					</div>
 				</div>
 			{/each}
 
+			{#if addingCategory}
+				<input
+					class="mb-2 h-14 w-full rounded-[3px] border border-amber-dim bg-raised px-4 text-lg"
+					bind:value={newCategory}
+					placeholder="Име на новата категория"
+				/>
+			{/if}
+
 			<button class="touch mt-1 h-12 w-full text-sm text-muted" on:click={addVariant}>
-				+ Още един размер
+				+ Още един вариант
 			</button>
 
 			<p class="mt-3 text-xs text-muted">
-				Остави размера празен, ако продуктът се продава само по един начин.
+				Един продукт може да се продава в няколко категории — наливно в едната, кенче в другата.
+				Остави името празно, ако се продава само по един начин.
 			</p>
 
 			{#if error}
