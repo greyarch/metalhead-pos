@@ -52,9 +52,11 @@
 		}
 
 		catRecords = cats;
+		// '' rather than undefined: with no categories at all the heading would
+		// otherwise print the word "undefined".
 		selectedCategory = cats.some((c) => c.name === selectedCategory)
 			? selectedCategory
-			: cats[0]?.name;
+			: cats[0]?.name ?? '';
 	}
 
 	// The rail follows catRecords, so reordering that reorders the menu on screen.
@@ -271,7 +273,16 @@
 		</header>
 
 		<div class="min-h-0 flex-1 overflow-y-auto pr-1">
-			{#if editMode}
+			{#if !categories.length}
+				<p class="mt-16 text-center text-muted">
+					Още няма нищо за продан.<br />
+					{#if editMode}
+						Добави първия продукт с <span class="text-amber">+</span> горе.
+					{:else}
+						Отвори списъка горе и добави първия продукт.
+					{/if}
+				</p>
+			{:else if editMode}
 				{#each items as item}
 					<div class="mb-1 flex items-center gap-1">
 						<label
