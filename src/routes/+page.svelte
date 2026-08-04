@@ -21,6 +21,8 @@
 
 	import { onMount } from 'svelte';
 
+	const LAST_CATEGORY = 'lastCategory';
+
 	let prdts = {};
 
 	let catRecords = [];
@@ -52,12 +54,15 @@
 		}
 
 		catRecords = cats;
-		// '' rather than undefined: with no categories at all the heading would
-		// otherwise print the word "undefined".
-		selectedCategory = cats.some((c) => c.name === selectedCategory)
-			? selectedCategory
-			: cats[0]?.name ?? '';
+		// Keep the current pick across a reload, then fall back to the one this till
+		// was last left on. '' rather than undefined when there is nothing at all,
+		// or the heading prints the word "undefined".
+		const known = (name) => cats.some((c) => c.name === name);
+		selectedCategory =
+			[selectedCategory, localStorage.getItem(LAST_CATEGORY)].find(known) ?? cats[0]?.name ?? '';
 	}
+
+	$: if (selectedCategory) localStorage.setItem(LAST_CATEGORY, selectedCategory);
 
 	// The rail follows catRecords, so reordering that reorders the menu on screen.
 	$: categories = catRecords.map((c) => c.name);

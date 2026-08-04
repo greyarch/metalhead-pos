@@ -152,7 +152,7 @@
 					class="h-14 w-full rounded-[3px] border border-rule bg-raised px-4 text-lg"
 					bind:value={name}
 					autofocus
-					placeholder="напр. Пшенично"
+					placeholder="напр. Anywhere Loud"
 				/>
 			</label>
 
