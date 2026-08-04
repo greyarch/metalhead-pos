@@ -88,8 +88,9 @@
 </script>
 
 <div class="flex h-full flex-col {busy ? 'pointer-events-none opacity-40' : ''}">
-	<header class="flex items-center gap-2 border-b border-rule px-4 py-[0.9rem]">
-		<h2 class="display flex-1 text-2xl text-amber">Сметка</h2>
+	<!-- h-[76px] matches the menu's header so the two rules line up across the screen -->
+	<header class="flex h-[76px] shrink-0 items-center gap-2 border-b border-rule px-4">
+		<h2 class="display flex-1 text-3xl text-amber">Сметка</h2>
 		{#if $cart.items.length}
 			<button
 				class="touch touch-danger h-11 min-h-0 w-11 text-muted"
@@ -99,70 +100,105 @@
 				<Trash />
 			</button>
 		{:else}
-			<span class="text-sm text-muted">
-				Днес <span class="display ml-1 text-base text-[color:var(--text)]"
-					>{money($stats.todayTotal)}</span
-				>
+			<span class="flex items-baseline gap-2 text-base text-muted">
+				Днес
+				<span class="display text-2xl text-[color:var(--text)]">{money($stats.todayTotal)}</span>
 			</span>
 		{/if}
 	</header>
 
-	<!-- Lines -->
-	<div class="min-h-0 flex-1 overflow-y-auto px-4">
-		{#each $cart.items as cartItem (lineKey(cartItem))}
+	<!-- Lines. The change calculator floats in here rather than in the footer, so
+	     nothing tappable ever sits next to the payment buttons. -->
+	<div class="relative min-h-0 flex-1">
+		{#if showCalc && $cart.items.length}
 			<div
-				class="flex items-center gap-2 border-b border-rule py-2.5"
-				in:fly={{ y: -8, duration: 160 }}
-				animate:flip={{ duration: 180 }}
+				class="absolute inset-x-3 bottom-3 z-10 rounded-[3px] border border-rule bg-panel shadow-[0_-8px_24px_rgba(0,0,0,0.5)]"
+				transition:fly={{ y: 12, duration: 160 }}
 			>
-				<div class="min-w-0 flex-1">
-					<div class="truncate font-semibold leading-tight">{lineLabel(cartItem)}</div>
-					<button
-						class="text-xs text-muted hover:text-[color:var(--danger)]"
-						on:click={removeVariantFromCart(cartItem)}
-					>
-						Премахни
-					</button>
-				</div>
-
-				<div class="flex items-center gap-1">
-					<button
-						class="touch h-10 min-h-0 w-10 text-lg"
-						aria-label="По-малко"
-						on:click={() => cart.remove(cartItem)}>−</button
-					>
-					<input
-						type="number"
-						bind:value={cartItem.quantity}
-						on:input={(e) => cart.update(cartItem, e.target.value)}
-						on:focus={(e) => e.target.select()}
-						min="1"
-						aria-label="Количество"
-						class="h-10 w-12 rounded-[3px] border border-rule bg-ink text-center font-semibold"
-					/>
-					<button
-						class="touch h-10 min-h-0 w-10 text-lg"
-						aria-label="Още"
-						on:click={() => cart.update(cartItem, cartItem.quantity + 1)}>+</button
-					>
-				</div>
-
-				<div class="display w-20 text-right text-lg">
-					{money(cartItem.variant.price * cartItem.quantity)}
-				</div>
+				<Calc />
 			</div>
-		{/each}
+		{/if}
+
+		<div class="h-full overflow-y-auto px-4">
+			{#each $cart.items as cartItem (lineKey(cartItem))}
+				<!-- The name gets the full width of the panel: beer names here run long,
+			     and truncating them hid which size had been rung up. -->
+				<div
+					class="border-b border-rule py-2"
+					in:fly={{ y: -8, duration: 160 }}
+					animate:flip={{ duration: 180 }}
+				>
+					<div class="mb-1 font-semibold leading-tight">{lineLabel(cartItem)}</div>
+
+					<div class="flex items-center gap-2">
+						<button
+							class="touch touch-danger h-10 min-h-0 w-10 shrink-0 text-muted"
+							aria-label="Премахни реда"
+							on:click={removeVariantFromCart(cartItem)}
+						>
+							<Trash />
+						</button>
+
+						<button
+							class="touch h-10 min-h-0 w-10 shrink-0 text-lg"
+							aria-label="По-малко"
+							on:click={() => cart.remove(cartItem)}>−</button
+						>
+						<input
+							type="number"
+							bind:value={cartItem.quantity}
+							on:input={(e) => cart.update(cartItem, e.target.value)}
+							on:focus={(e) => e.target.select()}
+							min="1"
+							aria-label="Количество"
+							class="h-10 w-12 shrink-0 rounded-[3px] border border-rule bg-ink text-center font-semibold"
+						/>
+						<button
+							class="touch h-10 min-h-0 w-10 shrink-0 text-lg"
+							aria-label="Още"
+							on:click={() => cart.update(cartItem, cartItem.quantity + 1)}>+</button
+						>
+
+						<div class="display flex-1 text-right text-lg">
+							{money(cartItem.variant.price * cartItem.quantity)}
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
 	</div>
 
-	<!-- Total and payment: the part someone reads from a metre away -->
-	<footer class="max-h-[70%] shrink-0 overflow-y-auto border-t border-rule px-4 py-4">
-		<div class="mb-3 flex items-baseline justify-between">
-			<span class="eyebrow">Общо</span>
-			<span class="display text-5xl leading-none text-amber">{money($shownTotal)}</span>
+	<!-- Its own strip under the list: clear of the payment buttons below and of the
+	     clear-the-whole-order bin above, both costly to hit by mistake. -->
+	{#if $cart.items.length}
+		<div class="shrink-0 border-t border-rule px-4 py-3">
+			<button
+				class="touch h-11 min-h-0 w-full text-xs uppercase tracking-widest
+					{showCalc ? 'border-amber-dim text-amber' : 'text-muted'}"
+				on:click={() => (showCalc = !showCalc)}
+			>
+				{showCalc ? 'Скрий ресто' : 'Изчисли ресто'}
+			</button>
+		</div>
+	{/if}
+
+	<!-- Total and payment. Paying prints a fiscal receipt, so those buttons sit
+	     alone below a rule, with nothing tappable above them but the total and
+	     nothing at all below them. -->
+	<footer class="shrink-0 border-t border-rule px-4 py-4">
+		<div class="flex items-baseline gap-3">
+			<span class="eyebrow shrink-0">Общо</span>
+			<span class="display flex-1 text-right text-5xl leading-none text-amber">
+				{money($shownTotal)}
+			</span>
 		</div>
 
 		{#if $cart.items.length}
-			<div class="grid gap-2 {$showRegisterButton ? 'grid-cols-3' : 'grid-cols-2'}">
+			<div
+				class="mt-4 grid gap-2 border-t border-rule pt-4 {$showRegisterButton
+					? 'grid-cols-3'
+					: 'grid-cols-2'}"
+			>
 				<button class="touch touch-accent h-16 text-lg" on:click={handleSubmit('cash')}>
 					В брой
 				</button>
@@ -174,18 +210,6 @@
 					<button class="touch h-16 text-lg" on:click={handleSubmit('register')}>Каса</button>
 				{/if}
 			</div>
-
-			<button
-				class="mt-3 w-full text-xs uppercase tracking-widest text-muted hover:text-[color:var(--text)]"
-				on:click={() => (showCalc = !showCalc)}
-			>
-				{showCalc ? 'Скрий ресто' : 'Изчисли ресто'}
-			</button>
-			{#if showCalc}
-				<div transition:fly={{ y: 12, duration: 160 }}>
-					<Calc />
-				</div>
-			{/if}
 		{:else}
 			<p class="py-3 text-center text-sm text-muted">Избери продукт, за да започнеш.</p>
 		{/if}

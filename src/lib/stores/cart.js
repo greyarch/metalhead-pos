@@ -1,9 +1,37 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
-const cart = writable({ items: [], total: 0 });
+const KEY = 'cart';
+// A half-rung bill should survive a stray refresh or a browser crash. One left
+// over from an earlier shift should not quietly reappear and get charged.
+const MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 const getTotalPrice = (items) =>
 	items.reduce((acc, item) => acc + item.variant.price * item.quantity, 0);
+
+function restore() {
+	if (!browser) return { items: [], total: 0 };
+	try {
+		const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+		if (!saved?.items?.length) return { items: [], total: 0 };
+		if (!saved.savedAt || Date.now() - saved.savedAt > MAX_AGE_MS) return { items: [], total: 0 };
+		// Recompute rather than trust a stored total: it is the number someone pays.
+		return { items: saved.items, savedAt: saved.savedAt, total: getTotalPrice(saved.items) };
+	} catch {
+		return { items: [], total: 0 };
+	}
+}
+
+const cart = writable(restore());
+
+if (browser) {
+	cart.subscribe((c) => {
+		// Age is measured from when the bill was started, not from the last write,
+		// so repeatedly reloading the page cannot keep an old one alive forever.
+		const savedAt = c.items.length ? (c.savedAt ??= Date.now()) : null;
+		localStorage.setItem(KEY, JSON.stringify({ items: c.items, savedAt }));
+	});
+}
 
 function add(item) {
 	cart.update((cart) => {

@@ -298,7 +298,6 @@
 <div class="flex h-screen w-full bg-ink">
 	<!-- Left rail: what to sell, and the till drawer at the bottom -->
 	<aside class="flex w-52 shrink-0 flex-col border-r border-rule bg-panel p-3">
-		<div class="eyebrow mb-2 px-1">Металхед</div>
 		<CategorySidebar
 			{categories}
 			{selectedCategory}
@@ -312,10 +311,11 @@
 		</div>
 	</aside>
 
-	<!-- Centre: the products -->
-	<!-- max-w keeps name and price from drifting apart on a wide screen -->
-	<main class="flex min-w-0 w-full max-w-4xl flex-1 flex-col p-5">
-		<header class="mb-3 flex items-center gap-3 border-b border-rule pb-3">
+	<!-- Centre: the products. Takes whatever is left over, so the rail and the bill
+	     keep their widths and the space goes to the menu rather than beside it. -->
+	<!-- h-[76px] here and on the bill's header so both rules land on the same line -->
+	<main class="flex min-w-0 flex-1 flex-col px-5 pb-5">
+		<header class="mb-3 flex h-[76px] shrink-0 items-center gap-3 border-b border-rule">
 			<h2 class="display flex-1 truncate text-3xl text-amber">{selectedCategory}</h2>
 			{#if editMode}
 				<span class="eyebrow hidden sm:block">Подредба и видимост</span>

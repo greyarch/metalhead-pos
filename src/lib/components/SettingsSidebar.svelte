@@ -19,11 +19,11 @@
 	}
 </script>
 
-<div class="eyebrow mb-2 px-1">Каса</div>
-<div class="flex flex-col gap-1">
+<div class="eyebrow mb-3 px-1">Каса</div>
+<div class="flex flex-col gap-3">
 	{#each actions as { label, run: action }}
 		<button
-			class="touch min-h-[44px] justify-start px-4 text-sm text-muted hover:text-[color:var(--text)]"
+			class="touch min-h-[56px] justify-start px-4 text-base text-muted hover:text-[color:var(--text)]"
 			on:click={() => run(action)}
 		>
 			{label}
