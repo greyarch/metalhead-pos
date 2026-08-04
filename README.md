@@ -14,14 +14,44 @@ hit in `localStorage`.
 | -------------- | ------------------------------------------------------------ |
 | `users`        | till operators, auth collection                              |
 | `categories`   | sidebar, ordered by `sort` then `name`                       |
-| `products`     | `variants` is JSON: `[{ "name": "0.5", "price": 6 }]`        |
+| `products`     | `variants` is JSON: `[{ "name": "0.5", "price": 6 }]`; staff add these from the till, and hide them with the list button |
 | `orders`       | `payment_type`: `cash` \| `card` \| `register`               |
 | `order_items`  | snapshots name/variant/price — editing a product never rewrites past sales |
 | `today_totals` | view collection, SQL sums for today                          |
+| `audit`        | who changed what, written by a hook — see below               |
 
 Schema lives in [pb_migrations/](pb_migrations/) as one snapshot, applied on
-startup. Once there is a deployed database, schema edits made in the admin UI
-append further migrations here — commit them.
+startup. Editing collections in the admin UI appends further migrations here —
+commit them.
+
+**Until the first production deploy**, those extras can be collapsed back into a
+single snapshot whenever they pile up:
+
+```bash
+./pb migrate collections --dir ./pb_data --migrationsDir ./pb_migrations
+rm pb_migrations/<the files it supersedes>
+```
+
+**After that, never again.** A deployed database has already recorded the old
+migrations as applied; replacing them makes it and a fresh install build their
+schemas from different files. From the first deploy on, migrations only get
+appended.
+
+## Audit
+
+[pb_hooks/audit.pb.js](pb_hooks/audit.pb.js) records every catalogue change that
+arrives over the API: creating a product or category, editing one, deleting one,
+plus order deletions (a rolled-back sale would otherwise leave no trace). Each
+row holds the actor, the record, and before/after snapshots.
+
+It is a server hook rather than frontend code so it cannot be skipped or forged
+by whatever calls the API. Staff can read the log but not write to it — only the
+hook writes, and hooks bypass API rules. Read it in the admin UI under `audit`.
+
+Two things to know when editing the hooks: each handler runs in its own goja
+context and cannot see functions defined elsewhere in the file, which is why the
+helpers are `require`d inside each one; and every handler must reach `e.next()`,
+or auditing would block the very operation it is recording.
 
 ## Developing
 

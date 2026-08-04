@@ -808,8 +808,8 @@ migrate((app) => {
       "viewRule": "id = @request.auth.id"
     },
     {
-      "createRule": null,
-      "deleteRule": null,
+      "createRule": "@request.auth.id != \"\"",
+      "deleteRule": "@request.auth.id != \"\" && @collection.products.category != id",
       "fields": [
         {
           "autogeneratePattern": "[a-z0-9]{15}",
@@ -883,11 +883,11 @@ migrate((app) => {
       "name": "categories",
       "system": false,
       "type": "base",
-      "updateRule": null,
+      "updateRule": "@request.auth.id != \"\"",
       "viewRule": "@request.auth.id != \"\""
     },
     {
-      "createRule": null,
+      "createRule": "@request.auth.id != \"\"",
       "deleteRule": null,
       "fields": [
         {
@@ -1276,6 +1276,145 @@ migrate((app) => {
       "type": "view",
       "updateRule": null,
       "viewQuery": "\n      SELECT 'today' AS id,\n        COALESCE(SUM(total_price), 0) AS total,\n        COALESCE(SUM(CASE WHEN payment_type = 'cash' THEN total_price END), 0) AS cash,\n        COALESCE(SUM(CASE WHEN payment_type = 'card' THEN total_price END), 0) AS card,\n        COALESCE(SUM(CASE WHEN payment_type = 'register' THEN total_price END), 0) AS register\n      FROM orders\n      WHERE date(created, 'localtime') = date('now', 'localtime')\n    ",
+      "viewRule": "@request.auth.id != \"\""
+    },
+    {
+      "createRule": null,
+      "deleteRule": null,
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "help": "",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "help": "",
+          "hidden": false,
+          "id": "text4232930610",
+          "max": 0,
+          "min": 0,
+          "name": "collection",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "help": "",
+          "hidden": false,
+          "id": "text2603917201",
+          "max": 0,
+          "min": 0,
+          "name": "record",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "help": "",
+          "hidden": false,
+          "id": "select1204587666",
+          "maxSelect": 1,
+          "name": "action",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "create",
+            "update",
+            "delete"
+          ]
+        },
+        {
+          "autogeneratePattern": "",
+          "help": "",
+          "hidden": false,
+          "id": "text1148540665",
+          "max": 0,
+          "min": 0,
+          "name": "actor",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": false,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "_pb_users_auth_",
+          "help": "",
+          "hidden": false,
+          "id": "relation2375276105",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "user",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "help": "",
+          "hidden": false,
+          "id": "json3627769262",
+          "maxSize": 50000,
+          "name": "before",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "json"
+        },
+        {
+          "help": "",
+          "hidden": false,
+          "id": "json2302955073",
+          "maxSize": 50000,
+          "name": "after",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "json"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        }
+      ],
+      "id": "pbc_1499349394",
+      "indexes": [
+        "CREATE INDEX idx_audit_created ON audit (created)",
+        "CREATE INDEX idx_audit_record ON audit (record)"
+      ],
+      "listRule": "@request.auth.id != \"\"",
+      "name": "audit",
+      "system": false,
+      "type": "base",
+      "updateRule": null,
       "viewRule": "@request.auth.id != \"\""
     }
   ];

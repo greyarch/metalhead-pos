@@ -11,6 +11,7 @@ module.exports = {
 				ink: 'var(--ink)',
 				panel: 'var(--panel)',
 				raised: 'var(--raised)',
+				band: 'var(--band)',
 				'raised-hi': 'var(--raised-hi)',
 				rule: 'var(--rule)',
 				muted: 'var(--muted)',

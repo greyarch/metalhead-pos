@@ -1,22 +1,30 @@
 <script>
-	import { cashIn, cashOut, printAgain, diagnostic } from '$lib/mypos.js';
+	import { cashIn, cashOut } from '$lib/mypos.js';
 
 	// Rare and consequential (each prints on the fiscal device), so they sit at the
 	// bottom of the rail, smaller and quieter than anything used during a sale.
+	// Diagnostics and reprint live in the settings dialog behind the cog.
 	const actions = [
 		{ label: '+ €100', run: cashIn },
-		{ label: '- €100', run: cashOut },
-		{ label: 'Ре-печат', run: printAgain },
-		{ label: 'Диагностика', run: diagnostic }
+		{ label: '- €100', run: cashOut }
 	];
+
+	async function run(action) {
+		try {
+			await action();
+		} catch (e) {
+			console.error(e);
+			alert(`Операцията не мина.\n\n${e?.message ?? e}`);
+		}
+	}
 </script>
 
 <div class="eyebrow mb-2 px-1">Каса</div>
 <div class="flex flex-col gap-1">
-	{#each actions as { label, run }}
+	{#each actions as { label, run: action }}
 		<button
 			class="touch min-h-[44px] justify-start px-4 text-sm text-muted hover:text-[color:var(--text)]"
-			on:click={run}
+			on:click={() => run(action)}
 		>
 			{label}
 		</button>

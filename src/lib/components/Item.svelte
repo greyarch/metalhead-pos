@@ -1,12 +1,17 @@
 <script>
 	export let item;
 	export let handleClick;
+	/** Every other row sits on a lighter band, so the eye keeps its place. */
+	export let alt = false;
 
 	const money = (n) => `€${Number(n).toFixed(2)}`;
 </script>
 
 {#if item.variants?.length}
-	<article class="flex items-center justify-between gap-4 border-b border-rule py-2.5">
+	<article
+		class="flex items-center justify-between gap-4 border-b border-rule py-2.5 pl-3 pr-2
+			{alt ? 'bg-band' : ''}"
+	>
 		<h3 class="display flex-1 text-xl leading-tight">{item.name}</h3>
 
 		<div class="flex flex-wrap justify-end gap-2">

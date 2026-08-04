@@ -9,6 +9,7 @@
 	import { flip } from 'svelte/animate';
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
+	import { showCalcByDefault, showRegisterButton } from '$lib/stores/settings.js';
 
 	updateStats();
 
@@ -28,7 +29,10 @@
 	}
 
 	let busy = false;
+	// Follows the setting (including a change made while this is on screen), but a
+	// manual toggle still wins until the setting itself changes again.
 	let showCalc = false;
+	showCalcByDefault.subscribe((on) => (showCalc = on));
 
 	async function submitOrder(orderType) {
 		let order;
@@ -158,13 +162,17 @@
 		</div>
 
 		{#if $cart.items.length}
-			<div class="grid grid-cols-2 gap-2">
+			<div class="grid gap-2 {$showRegisterButton ? 'grid-cols-3' : 'grid-cols-2'}">
 				<button class="touch touch-accent h-16 text-lg" on:click={handleSubmit('cash')}>
 					В брой
 				</button>
 				<button class="touch touch-accent h-16 text-lg" on:click={handleSubmit('card')}>
 					С карта
 				</button>
+				{#if $showRegisterButton}
+					<!-- No fiscal receipt for this one — see submitOrder. -->
+					<button class="touch h-16 text-lg" on:click={handleSubmit('register')}>Каса</button>
+				{/if}
 			</div>
 
 			<button

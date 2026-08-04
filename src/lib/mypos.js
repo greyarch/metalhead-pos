@@ -1,11 +1,39 @@
+import { findActiveServices } from '$lib/scan.js';
+
+const URL_KEY = 'myposUrl';
+
+/** Address of the fiscal device this till last found on the LAN. */
+export function getDeviceUrl() {
+	return localStorage.getItem(URL_KEY);
+}
+
+/** Scan the LAN and remember the first device found. Returns its URL, or null. */
+export async function findDevice() {
+	const services = await findActiveServices();
+	if (!services.length) return null;
+	localStorage.setItem(URL_KEY, services[0].url);
+	return services[0].url;
+}
+
 export async function mypos(payload) {
-	const myposUrl = localStorage.getItem('myposUrl')
-	const posRes = await fetch(myposUrl, {
-		method: 'POST',
-		body: JSON.stringify(payload)
-	});
+	const myposUrl = getDeviceUrl();
+	if (!myposUrl) throw new Error('Няма намерено myPOS устройство.');
+
+	let posRes;
+	try {
+		posRes = await fetch(myposUrl, {
+			method: 'POST',
+			body: JSON.stringify(payload)
+		});
+	} catch (e) {
+		// A browser network failure reads as "Failed to fetch", which tells the bar
+		// staff nothing. The address is the useful part — it is usually stale.
+		console.error(e);
+		throw new Error(`Устройството на ${myposUrl} не отговаря. Потърси го наново от настройките.`);
+	}
+
 	const posResult = await posRes.json();
-	if ('error' in posResult) throw posResult.error
+	if ('error' in posResult) throw posResult.error;
 	return posResult;
 }
 
