@@ -1,12 +1,12 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
-	import { findDevice, getDeviceUrl, diagnostic, printAgain } from '$lib/mypos.js';
+	import { findDevice, getDeviceUrl, setDeviceUrl, diagnostic, printAgain } from '$lib/mypos.js';
 	import { showCalcByDefault, showRegisterButton } from '$lib/stores/settings.js';
 	import X from '$lib/icons/X.svelte';
 
 	const dispatch = createEventDispatcher();
 
-	let deviceUrl = getDeviceUrl();
+	let deviceUrl = getDeviceUrl() ?? '';
 
 	// One action at a time — the device answers one request at a time anyway.
 	let running = '';
@@ -28,9 +28,29 @@
 	const scan = () =>
 		run('scan', async () => {
 			const found = await findDevice();
-			deviceUrl = getDeviceUrl();
+			deviceUrl = getDeviceUrl() ?? '';
 			if (!found) throw new Error('Не намирам myPOS устройства по мрежата.');
 			return `Намерено устройство: ${found}`;
+		});
+
+	// The scan only sweeps 192.168.8.100-110. A device anywhere else — or behind a
+	// proxy — has to be typed in.
+	const saveUrl = () =>
+		run('save', async () => {
+			const url = deviceUrl.trim();
+			if (!url) throw new Error('Въведи адрес на устройството.');
+			let parsed;
+			try {
+				parsed = new URL(url);
+			} catch {
+				throw new Error('Адресът не изглежда валиден. Пример: http://192.168.8.104:8080/jsonrpc');
+			}
+			if (!/^https?:$/.test(parsed.protocol)) {
+				throw new Error('Адресът трябва да започва с http:// или https://');
+			}
+			setDeviceUrl(url);
+			deviceUrl = url;
+			return 'Адресът е запазен. Провери с „Диагностика“.';
 		});
 
 	const check = () =>
@@ -67,15 +87,25 @@
 
 		<div class="px-5 py-4">
 			<div class="eyebrow mb-2">Фискално устройство</div>
-			<p class="mb-3 truncate text-sm {deviceUrl ? 'text-muted' : 'text-[color:var(--danger)]'}">
-				{deviceUrl ?? 'Няма намерено устройство'}
-			</p>
+			<div class="mb-2 flex items-center gap-2">
+				<input
+					class="h-14 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-4"
+					bind:value={deviceUrl}
+					spellcheck="false"
+					autocapitalize="off"
+					aria-label="Адрес на устройството"
+					placeholder="http://192.168.8.104:8080/jsonrpc"
+				/>
+				<button class="touch h-14 w-28 shrink-0" disabled={!!running} on:click={saveUrl}>
+					{running === 'save' ? 'Запазвам…' : 'Запази'}
+				</button>
+			</div>
 
 			<button class="touch touch-accent h-14 w-full text-lg" disabled={!!running} on:click={scan}>
 				{#if running === 'scan'}
 					<span class="spinner mr-3" aria-hidden="true" /> Търся по мрежата…
 				{:else}
-					Търси устройства
+					Търси автоматично
 				{/if}
 			</button>
 

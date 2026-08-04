@@ -7,6 +7,11 @@ export function getDeviceUrl() {
 	return localStorage.getItem(URL_KEY);
 }
 
+/** Point this till at a device by hand, when the scan cannot find it. */
+export function setDeviceUrl(url) {
+	localStorage.setItem(URL_KEY, url);
+}
+
 /** Scan the LAN and remember the first device found. Returns its URL, or null. */
 export async function findDevice() {
 	const services = await findActiveServices();
@@ -29,7 +34,7 @@ export async function mypos(payload) {
 		// A browser network failure reads as "Failed to fetch", which tells the bar
 		// staff nothing. The address is the useful part — it is usually stale.
 		console.error(e);
-		throw new Error(`Устройството на ${myposUrl} не отговаря. Потърси го наново от настройките.`);
+		throw new Error(`Устройството на ${myposUrl} не отговаря. Провери адреса в настройките.`);
 	}
 
 	const posResult = await posRes.json();
