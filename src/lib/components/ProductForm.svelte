@@ -34,6 +34,7 @@
 	let busy = false;
 
 	$: addingCategory = variants.some((v) => v.category === NEW_CATEGORY);
+	$: byId = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
 	// Staff type on a numeric keypad where the decimal key may be a comma.
 	const toPrice = (raw) => Number(String(raw).replace(',', '.').trim());
@@ -121,6 +122,30 @@
 		busy = false;
 	}
 
+	// Past sales keep their own copy of the name and price (see order_items), so
+	// this takes the product off the menu without touching the books.
+	async function remove() {
+		const where = [...new Set((product.variants ?? []).map((v) => byId[v.category]))]
+			.filter(Boolean)
+			.join(', ');
+		const answer = confirm(
+			`Да изтрия ли „${product.name}“?\n\n` +
+				`Изчезва от ${where || 'менюто'} заедно с всичките си цени.\n` +
+				`Ако просто е свършил, махни отметката „Показвай“ вместо това.`
+		);
+		if (!answer) return;
+
+		busy = true;
+		try {
+			await pb.collection('products').delete(product.id);
+			dispatch('saved', { record: null, categoryId: null, created: false });
+		} catch (e) {
+			console.error(e);
+			error = `Не беше изтрит. ${e.message ?? ''}`;
+			busy = false;
+		}
+	}
+
 	function sameVariants(a, b) {
 		const norm = (list) =>
 			JSON.stringify((list ?? []).map((v) => [v.name, v.price, v.category, v.active !== false]));
@@ -135,8 +160,10 @@
 	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
 	on:click|self={() => dispatch('close')}
 >
-	<div class="max-h-full w-[40rem] overflow-y-auto border border-rule bg-panel">
-		<header class="flex items-center gap-2 border-b border-rule px-5 py-4">
+	<!-- Only the variant list scrolls. A product with a few variants used to push
+	     Запази off the bottom of a 1366x768 till. -->
+	<div class="flex max-h-full w-[40rem] flex-col border border-rule bg-panel">
+		<header class="flex shrink-0 items-center gap-2 border-b border-rule px-5 py-4">
 			<h2 class="display flex-1 text-2xl text-amber">
 				{editing ? 'Редакция на продукт' : 'Нов продукт'}
 			</h2>
@@ -150,7 +177,7 @@
 		</header>
 
 		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-		<div class="px-5 py-4" on:input={() => (error = '')}>
+		<div class="min-h-0 flex-1 overflow-y-auto px-5 py-4" on:input={() => (error = '')}>
 			<label class="mb-5 block">
 				<span class="eyebrow mb-1 block">Име</span>
 				<!-- svelte-ignore a11y-autofocus -->
@@ -254,11 +281,25 @@
 			{/if}
 		</div>
 
-		<footer class="grid grid-cols-2 gap-2 border-t border-rule px-5 py-4">
-			<button class="touch h-14" on:click={() => dispatch('close')}>Откажи</button>
-			<button class="touch touch-accent h-14 text-lg" disabled={busy} on:click={save}>
-				{busy ? 'Запазвам…' : 'Запази'}
-			</button>
+		<footer class="flex shrink-0 gap-2 border-t border-rule px-5 py-4">
+			{#if editing}
+				<!-- Off on its own at the far end: the two buttons anyone presses on a
+				     normal edit are together on the right, away from this one. -->
+				<button
+					class="touch touch-danger h-14 w-14 shrink-0 text-muted"
+					aria-label="Изтрий продукта"
+					disabled={busy}
+					on:click={remove}
+				>
+					<Trash />
+				</button>
+			{/if}
+			<div class="ml-auto grid flex-1 grid-cols-2 gap-2">
+				<button class="touch h-14" on:click={() => dispatch('close')}>Откажи</button>
+				<button class="touch touch-accent h-14 text-lg" disabled={busy} on:click={save}>
+					{busy ? 'Запазвам…' : 'Запази'}
+				</button>
+			</div>
 		</footer>
 	</div>
 </div>

@@ -20,6 +20,13 @@ export async function findDevice() {
 	return services[0].url;
 }
 
+// The device sends no CORS headers, so a stock browser refuses to hand us the
+// reply even though the request lands and the device answers it. Each till needs
+// an extension that relaxes CORS; without one, every call here fails.
+//
+// No Content-Type on purpose: the browser then sends text/plain, which the
+// device accepts. application/json would add a preflight, and the device answers
+// OPTIONS with a 404.
 export async function mypos(payload) {
 	const myposUrl = getDeviceUrl();
 	if (!myposUrl) throw new Error('Няма намерено myPOS устройство.');
@@ -28,7 +35,10 @@ export async function mypos(payload) {
 	try {
 		posRes = await fetch(myposUrl, {
 			method: 'POST',
-			body: JSON.stringify(payload)
+			body: JSON.stringify(payload),
+			// The device is genuinely slow — a Diagnostic measured 14s — and a wedged
+			// one can go quiet altogether, which would leave the till spinning.
+			signal: AbortSignal.timeout(45000)
 		});
 	} catch (e) {
 		// A browser network failure reads as "Failed to fetch", which tells the bar
@@ -42,7 +52,10 @@ export async function mypos(payload) {
 	return posResult;
 }
 
-export function toReceipt(orderId, cart, paymentType) {
+// The id is JSON-RPC bookkeeping, not the order number: the device parses it as
+// a 32-bit int and answers "Invalid Request" for anything larger, so there is
+// nothing to gain by passing one of ours through. Every other call sends 1 too.
+export function toReceipt(cart, paymentType) {
 	const items = cart.items.map((item) => ({
 		department: 0,
 		name: item.variant.name === 'default' ? item.name : `${item.name} (${item.variant.name})`,
@@ -53,7 +66,7 @@ export function toReceipt(orderId, cart, paymentType) {
 	}));
 
 	return {
-		id: orderId,
+		id: 1,
 		jsonrpc: '2.0',
 		method: 'PrintReceipt',
 		params: {
@@ -116,13 +129,5 @@ export async function printAgain() {
 		id: 1,
 		jsonrpc: '2.0',
 		method: 'PrintAgain'
-	});
-}
-
-export async function readFiscalNumbers() {
-	return await mypos({
-		id: 1,
-		jsonrpc: '2.0',
-		method: 'ReadFiscalNumbers'
 	});
 }

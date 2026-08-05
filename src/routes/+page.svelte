@@ -244,11 +244,10 @@
 		if (!cat) return;
 
 		if (items.length) {
-			// Staff cannot delete products, only move them, so say that rather than
-			// leaving a dead button they cannot explain.
 			alert(
 				`Категорията „${cat.name}“ не е празна.\n\n` +
-					`Премести цените ѝ в друга категория (моливчето до всеки ред), после я изтрий.`
+					`Отвори всеки ред с моливчето и или премести цената в друга категория, ` +
+					`или изтрий продукта. После се трие и категорията.`
 			);
 			return;
 		}
@@ -406,9 +405,11 @@
 							{/if}
 							<span class="ml-auto shrink-0 text-sm text-muted">€{variant.price}</span>
 						</label>
+						<!-- `all`, not the category slice: the form saves the variant list it was
+						     given, so handing it one category's worth would delete the rest. -->
 						<IconButton
 							on:click={() => {
-								editProduct = item;
+								editProduct = { ...item, variants: item.all };
 								showProductForm = true;
 							}}
 						>

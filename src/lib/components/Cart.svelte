@@ -55,9 +55,7 @@
 				});
 			}
 			if (orderType !== 'register') {
-				// the fiscal device wants a numeric JSON-RPC id; PocketBase ids are strings
-				const receipt = toReceipt(Date.now(), $cart, orderType);
-				await mypos(receipt);
+				await mypos(toReceipt($cart, orderType));
 			}
 			cart.reset();
 		} catch (e) {
