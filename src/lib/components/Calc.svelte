@@ -38,8 +38,11 @@
 
 	<div class="grid grid-cols-3 gap-1.5">
 		{#each ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', 'C'] as button}
+			<!-- C is the only key here that is not its own explanation -->
 			<button
 				class="touch min-h-[48px] text-lg {button === 'C' ? 'touch-danger text-muted' : ''}"
+				aria-label={button === 'C' ? 'Изчисти сумата' : button}
+				title={button === 'C' ? 'Изчисти сумата' : button}
 				on:click={() => handleClick(button)}>{button}</button
 			>
 		{/each}

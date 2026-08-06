@@ -170,6 +170,7 @@
 			<button
 				class="touch h-11 min-h-0 w-11 text-muted"
 				aria-label="Затвори"
+				title="Затвори"
 				on:click={() => dispatch('close')}
 			>
 				<X />
@@ -207,7 +208,8 @@
 						<div class="flex w-9 shrink-0 flex-col gap-1">
 							<button
 								class="touch min-h-0 flex-1 disabled:pointer-events-none disabled:opacity-25"
-								aria-label="Нагоре"
+								aria-label="Премести реда нагоре"
+								title="Премести реда нагоре"
 								disabled={i === 0}
 								on:click={() => moveVariant(i, -1)}
 							>
@@ -215,7 +217,8 @@
 							</button>
 							<button
 								class="touch min-h-0 flex-1 disabled:pointer-events-none disabled:opacity-25"
-								aria-label="Надолу"
+								aria-label="Премести реда надолу"
+								title="Премести реда надолу"
 								disabled={i === variants.length - 1}
 								on:click={() => moveVariant(i, 1)}
 							>
@@ -224,7 +227,8 @@
 						</div>
 						<button
 							class="touch touch-danger h-12 w-12 shrink-0 text-muted disabled:pointer-events-none disabled:opacity-30"
-							aria-label="Премахни реда"
+							aria-label="Премахни този вариант"
+							title="Премахни този вариант"
 							disabled={variants.length === 1}
 							on:click={() => removeVariant(i)}
 						>
@@ -288,6 +292,7 @@
 				<button
 					class="touch touch-danger h-14 w-14 shrink-0 text-muted"
 					aria-label="Изтрий продукта"
+					title="Изтрий продукта"
 					disabled={busy}
 					on:click={remove}
 				>

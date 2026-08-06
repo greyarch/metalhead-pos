@@ -104,6 +104,7 @@
 			<button
 				class="touch touch-danger h-11 min-h-0 w-11 text-muted"
 				aria-label="Изчисти сметката"
+				title="Изчисти сметката"
 				on:click={cart.reset}
 			>
 				<Trash />
@@ -142,7 +143,8 @@
 					<div class="flex items-center gap-2">
 						<button
 							class="touch touch-danger h-10 min-h-0 w-10 shrink-0 text-muted"
-							aria-label="Премахни реда"
+							aria-label="Премахни реда от сметката"
+							title="Премахни реда от сметката"
 							on:click={removeVariantFromCart(cartItem)}
 						>
 							<Trash />
@@ -150,7 +152,8 @@
 
 						<button
 							class="touch h-10 min-h-0 w-10 shrink-0 text-lg"
-							aria-label="По-малко"
+							aria-label="Едно по-малко"
+							title="Едно по-малко"
 							on:click={() => cart.remove(cartItem)}>−</button
 						>
 						<input
@@ -164,7 +167,8 @@
 						/>
 						<button
 							class="touch h-10 min-h-0 w-10 shrink-0 text-lg"
-							aria-label="Още"
+							aria-label="Едно повече"
+							title="Едно повече"
 							on:click={() => cart.update(cartItem, cartItem.quantity + 1)}>+</button
 						>
 

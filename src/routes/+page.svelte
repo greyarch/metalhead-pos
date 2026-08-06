@@ -348,6 +348,7 @@
 						<button
 							class="-mr-1 shrink-0 px-1 text-base leading-none opacity-70 hover:opacity-100"
 							aria-label="Скрий съобщението"
+							title="Скрий съобщението"
 							on:click={clearNotice}>×</button
 						>
 					{/if}
@@ -360,15 +361,31 @@
 					on:click={deleteCategory}
 					class={items.length ? '' : 'touch-danger'}
 					aria-label="Изтрий категорията"
+					title="Изтрий категорията"
 				>
 					<Trash />
 				</IconButton>
-				<IconButton on:click={() => (showProductForm = true)}><Plus /></IconButton>
-				<IconButton on:click={cancelEdit} class="touch-danger"><X /></IconButton>
-				<IconButton on:click={handleConfirmEdit} class="touch-accent"><Check /></IconButton>
+				<IconButton on:click={() => (showProductForm = true)} aria-label="Добави нов продукт">
+					<Plus />
+				</IconButton>
+				<IconButton on:click={cancelEdit} class="touch-danger" aria-label="Откажи промените">
+					<X />
+				</IconButton>
+				<IconButton
+					on:click={handleConfirmEdit}
+					class="touch-accent"
+					aria-label="Запази промените"
+					title="Запази промените"
+				>
+					<Check />
+				</IconButton>
 			{:else}
-				<IconButton on:click={() => (showSettings = true)}><Cog /></IconButton>
-				<IconButton on:click={startEdit}><List /></IconButton>
+				<IconButton on:click={() => (showSettings = true)} aria-label="Настройки">
+					<Cog />
+				</IconButton>
+				<IconButton on:click={startEdit} aria-label="Редактирай менюто">
+					<List />
+				</IconButton>
 			{/if}
 		</header>
 
@@ -384,6 +401,7 @@
 					<button
 						class="touch h-12 min-h-0 w-12 shrink-0 text-muted"
 						aria-label="Изчисти търсенето"
+						title="Изчисти търсенето"
 						on:click={() => (editFilter = '')}
 					>
 						<X />
@@ -446,6 +464,7 @@
 						<!-- `all`, not the category slice: the form saves the variant list it was
 						     given, so handing it one category's worth would delete the rest. -->
 						<IconButton
+							aria-label="Редактирай „{item.name}“"
 							on:click={() => {
 								editProduct = { ...item, variants: item.all };
 								showProductForm = true;

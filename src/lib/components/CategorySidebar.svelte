@@ -82,6 +82,7 @@
 				{editMode ? 'draggable' : ''}
 				{dragging && dragIndex === i ? 'is-dragging' : ''}"
 			aria-current={selectedCategory === category}
+			title={editMode ? 'Влачи, за да преместиш категорията' : category}
 			on:pointerdown={(e) => down(e, i)}
 			on:pointermove={move}
 			on:pointerup={up}
@@ -91,7 +92,7 @@
 		>
 			<span class="flex-1 text-left">{category}</span>
 			{#if editMode}
-				<span class="ml-2 text-muted"><Grip /></span>
+				<span class="ml-2 text-muted" aria-hidden="true"><Grip /></span>
 			{/if}
 		</button>
 	{/each}

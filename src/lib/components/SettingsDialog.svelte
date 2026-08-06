@@ -79,6 +79,7 @@
 			<button
 				class="touch h-11 min-h-0 w-11 text-muted"
 				aria-label="Затвори"
+				title="Затвори"
 				on:click={() => dispatch('close')}
 			>
 				<X />

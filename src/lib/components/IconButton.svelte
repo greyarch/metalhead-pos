@@ -7,6 +7,7 @@
 		disabled:pointer-events-none disabled:opacity-30 {$$props['class'] ?? ''}"
 	{disabled}
 	aria-label={$$props['aria-label']}
+	title={$$props['aria-label']}
 	on:click
 >
 	<slot />
