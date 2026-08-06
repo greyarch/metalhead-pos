@@ -16,6 +16,7 @@
 
 	import { env } from '$env/dynamic/public';
 	import { findDevice, checkDevice } from '$lib/mypos.js';
+	import { flash, notify, clearNotice } from '$lib/stores/notice.js';
 	import { pb } from '$lib/pb.js';
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
 
@@ -226,7 +227,7 @@
 			pendingActive = {};
 		} catch (error) {
 			console.error(error);
-			alert(error);
+			notify(`Промените не бяха запазени. ${error?.message ?? error}`);
 		}
 	}
 
@@ -244,11 +245,7 @@
 		if (!cat) return;
 
 		if (items.length) {
-			alert(
-				`Категорията „${cat.name}“ не е празна.\n\n` +
-					`Отвори всеки ред с моливчето и или премести цената в друга категория, ` +
-					`или изтрий продукта. После се трие и категорията.`
-			);
+			notify(`„${cat.name}“ не е празна — премести или изтрий продуктите ѝ първо.`);
 			return;
 		}
 
@@ -258,7 +255,7 @@
 			await pb.collection('categories').delete(cat.id);
 		} catch (error) {
 			console.error(error);
-			alert(`Категорията не беше изтрита.\n\n${error?.message ?? error}`);
+			notify(`Категорията не беше изтрита. ${error?.message ?? error}`);
 			return;
 		}
 
@@ -278,6 +275,8 @@
 	/** Why the device cannot sell, or null. Starts clear so a good one never flashes red. */
 	let deviceFault = null;
 	const refreshDevice = async () => (deviceFault = await checkDevice());
+
+	$: banner = $flash ?? (deviceFault ? { text: deviceFault, tone: 'bad' } : null);
 
 	onMount(() => {
 		localStorage.getItem('myposUrl') || localStorage.setItem('myposUrl', env.PUBLIC_POS_URL);
@@ -325,16 +324,33 @@
 		<header class="mb-3 flex h-[76px] shrink-0 items-center gap-3 border-b border-rule">
 			<h2 class="display min-w-0 flex-1 truncate text-3xl text-amber">{selectedCategory}</h2>
 
-			<!-- Stays put until the device can sell again. Nothing to dismiss: a till
-			     that cannot print is worth looking at, not acknowledging. -->
-			{#if deviceFault}
+			<!-- One strip for everything the till has to say. A message someone raised
+			     wins over the standing device warning, which is still true underneath
+			     and comes back the moment the message is cleared. -->
+			{#if banner}
 				<span
-					class="flex shrink-0 items-center gap-2 border border-[color:var(--danger)] px-3 py-1.5
-						text-xs uppercase tracking-widest text-[color:var(--danger)]"
+					class="flex min-w-0 max-w-[34rem] items-center gap-2 border px-3 py-1.5
+						text-xs uppercase tracking-widest
+						{banner.tone === 'ok'
+						? 'border-amber-dim text-amber'
+						: 'border-[color:var(--danger)] text-[color:var(--danger)]'}"
 					role="status"
+					title={banner.text}
 				>
-					<span class="h-2 w-2 shrink-0 rounded-full bg-[color:var(--danger)]" aria-hidden="true" />
-					{deviceFault}
+					<span
+						class="h-2 w-2 shrink-0 rounded-full {banner.tone === 'ok'
+							? 'bg-[color:var(--amber)]'
+							: 'bg-[color:var(--danger)]'}"
+						aria-hidden="true"
+					/>
+					<span class="truncate">{banner.text}</span>
+					{#if $flash}
+						<button
+							class="-mr-1 shrink-0 px-1 text-base leading-none opacity-70 hover:opacity-100"
+							aria-label="Скрий съобщението"
+							on:click={clearNotice}>×</button
+						>
+					{/if}
 				</span>
 			{/if}
 

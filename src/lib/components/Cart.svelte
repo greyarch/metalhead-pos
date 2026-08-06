@@ -10,6 +10,7 @@
 	import { tweened } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
 	import { showCalcByDefault, showRegisterButton } from '$lib/stores/settings.js';
+	import { notify } from '$lib/stores/notice.js';
 
 	updateStats();
 
@@ -55,14 +56,24 @@
 				});
 			}
 			if (orderType !== 'register') {
-				await mypos(toReceipt($cart, orderType));
+				const res = await mypos(toReceipt($cart, orderType));
+				// The device answers "no error" and still may not have printed: paper
+				// out, or a fault it wants retried (printResult, p.20 of the protocol).
+				// The sale is registered either way, so the order stands and the retry
+				// is PrintAgain — the Ре-печат button in settings.
+				const printed = res?.result?.printResult;
+				if (printed === 'NO_PAPER') {
+					notify('Свърши хартията. Смени я и натисни „Ре-печат“ в настройките.');
+				} else if (printed && printed !== 'SUCCESS') {
+					notify('Бележката не се отпечата. Опитай „Ре-печат“ в настройките.');
+				}
 			}
 			cart.reset();
 		} catch (e) {
 			console.error(e);
 			// cascade delete drops the order_items with it
 			if (order) await pb.collection('orders').delete(order.id).catch(console.error);
-			alert(`Грешка при изпращане на поръчката!\n\n${e.message}`);
+			notify(`Поръчката не мина. ${e.message ?? e}`);
 		}
 		busy = false;
 	}
