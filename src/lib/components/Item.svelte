@@ -21,7 +21,9 @@
 					on:click={handleClick(item, variant)}
 				>
 					{#if variant.name !== 'default'}
-						<span class="text-[0.7rem] uppercase tracking-widest text-muted">{variant.name}</span>
+						<span class="text-[0.7rem] uppercase tracking-widest text-amber-muted"
+							>{variant.name}</span
+						>
 					{/if}
 					<span class="display text-lg">{money(variant.price)}</span>
 				</button>

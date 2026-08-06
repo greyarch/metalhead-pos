@@ -17,6 +17,7 @@ module.exports = {
 				muted: 'var(--muted)',
 				amber: 'var(--amber)',
 				'amber-dim': 'var(--amber-dim)',
+				'amber-muted': 'var(--amber-muted)',
 				danger: 'var(--danger)'
 			}
 		}
