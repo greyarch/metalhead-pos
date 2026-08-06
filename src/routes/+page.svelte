@@ -15,7 +15,7 @@
 	import ProductForm from '$lib/components/ProductForm.svelte';
 
 	import { env } from '$env/dynamic/public';
-	import { findDevice } from '$lib/mypos.js';
+	import { findDevice, checkDevice } from '$lib/mypos.js';
 	import { pb } from '$lib/pb.js';
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
 
@@ -275,19 +275,27 @@
 	/** Product being edited, or null when the form is adding a new one. */
 	let editProduct = null;
 
+	/** Why the device cannot sell, or null. Starts clear so a good one never flashes red. */
+	let deviceFault = null;
+	const refreshDevice = async () => (deviceFault = await checkDevice());
+
 	onMount(() => {
 		localStorage.getItem('myposUrl') || localStorage.setItem('myposUrl', env.PUBLIC_POS_URL);
-		myposCheck();
 		loadProducts();
+
+		// The device going quiet mid-shift is the failure worth catching, so keep
+		// asking rather than reporting once at load and never again.
+		myposCheck().then(refreshDevice);
+		const timer = setInterval(refreshDevice, 30_000);
+		return () => clearInterval(timer);
 	});
 
-	// Startup scan only. A manual re-scan, with progress, lives in the settings dialog.
+	// Startup scan only. A manual re-scan, with progress, lives in the settings
+	// dialog. Finding nothing is not worth interrupting anyone over — the header
+	// says so, and keeps saying so until the device answers.
 	async function myposCheck() {
 		try {
-			if (!(await findDevice())) {
-				console.error('No myPOS devices found!');
-				alert('Не намирам myPOS устройства!');
-			}
+			await findDevice();
 		} catch (error) {
 			console.error('Error during scan:', error);
 		}
@@ -315,7 +323,21 @@
 	<!-- h-[76px] here and on the bill's header so both rules land on the same line -->
 	<main class="flex min-w-0 flex-1 flex-col px-5 pb-5">
 		<header class="mb-3 flex h-[76px] shrink-0 items-center gap-3 border-b border-rule">
-			<h2 class="display flex-1 truncate text-3xl text-amber">{selectedCategory}</h2>
+			<h2 class="display min-w-0 flex-1 truncate text-3xl text-amber">{selectedCategory}</h2>
+
+			<!-- Stays put until the device can sell again. Nothing to dismiss: a till
+			     that cannot print is worth looking at, not acknowledging. -->
+			{#if deviceFault}
+				<span
+					class="flex shrink-0 items-center gap-2 border border-[color:var(--danger)] px-3 py-1.5
+						text-xs uppercase tracking-widest text-[color:var(--danger)]"
+					role="status"
+				>
+					<span class="h-2 w-2 shrink-0 rounded-full bg-[color:var(--danger)]" aria-hidden="true" />
+					{deviceFault}
+				</span>
+			{/if}
+
 			{#if editMode}
 				<span class="eyebrow hidden sm:block">Подредба и видимост</span>
 				<IconButton
@@ -440,7 +462,14 @@
 </div>
 
 {#if showSettings}
-	<SettingsDialog on:close={() => (showSettings = false)} />
+	<!-- The address can change in there, so re-check rather than leave the warning
+	     up for another half minute. -->
+	<SettingsDialog
+		on:close={() => {
+			showSettings = false;
+			refreshDevice();
+		}}
+	/>
 {/if}
 
 {#if showProductForm}

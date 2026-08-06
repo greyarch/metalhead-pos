@@ -12,6 +12,33 @@ export function setDeviceUrl(url) {
 	localStorage.setItem(URL_KEY, url);
 }
 
+/**
+ * Can the device sell right now? Returns null when it can, or the reason it
+ * cannot, ready to put on screen.
+ *
+ * ReadFiscalNumbers is the cheapest question in the protocol that still goes
+ * through the fiscal service (p.7): no parameters, nothing printed, and it is
+ * refused with a proper error code when the device is in no state to trade —
+ * "Изтощена батерия" (33002), "Край на хартия" (35201), "Устройството е в
+ * състояние на блокада" (37010). A bare GET, by contrast, is answered by the
+ * HTTP layer whatever shape the fiscal side is in.
+ */
+export async function checkDevice() {
+	const url = getDeviceUrl();
+	if (!url) return 'Няма настроено фискално устройство';
+	try {
+		await readFiscalNumbers();
+		return null;
+	} catch (e) {
+		// mypos() throws the device's own error object for a refusal, and an Error
+		// for anything that stopped the request getting there.
+		if (typeof e?.code !== 'number') return 'Няма връзка с фискалното устройство';
+		// message is optional in the protocol, so fall back to the bare code
+		// rather than an empty warning strip.
+		return e.message || `Грешка от устройството (${e.code})`;
+	}
+}
+
 /** Scan the LAN and remember the first device found. Returns its URL, or null. */
 export async function findDevice() {
 	const services = await findActiveServices();
@@ -121,6 +148,15 @@ export async function diagnostic() {
 		id: 1,
 		jsonrpc: '2.0',
 		method: 'Diagnostic'
+	});
+}
+
+/** Serial numbers of the device and its fiscal memory. Used as the health check. */
+export async function readFiscalNumbers() {
+	return await mypos({
+		id: 1,
+		jsonrpc: '2.0',
+		method: 'ReadFiscalNumbers'
 	});
 }
 
