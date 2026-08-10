@@ -1,10 +1,10 @@
 <script>
 	import { pb } from '$lib/pb.js';
 
-	let loginError = false;
-	let busy = false;
-	let email = '';
-	let password = '';
+	let loginError = $state(false);
+	let busy = $state(false);
+	let email = $state('');
+	let password = $state('');
 
 	const login = async () => {
 		busy = true;
@@ -20,7 +20,13 @@
 </script>
 
 <div class="flex h-screen items-center justify-center bg-ink p-6">
-	<form class="w-[22rem]" on:submit|preventDefault={login}>
+	<form
+		class="w-[22rem]"
+		onsubmit={(e) => {
+			e.preventDefault();
+			login();
+		}}
+	>
 		<h1 class="display mb-1 text-4xl text-amber">Металхед</h1>
 		<p class="eyebrow mb-6">Каса</p>
 

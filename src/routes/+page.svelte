@@ -4,7 +4,7 @@
 	import Cart from '$lib/components/Cart.svelte';
 	import Item from '$lib/components/Item.svelte';
 	import IconButton from '$lib/components/IconButton.svelte';
-	import cart from '$lib/stores/cart.js';
+	import { cart } from '$lib/stores/cart.svelte.js';
 	import Check from '$lib/icons/Check.svelte';
 	import Cog from '$lib/icons/Cog.svelte';
 	import List from '$lib/icons/List.svelte';
@@ -16,7 +16,7 @@
 
 	import { env } from '$env/dynamic/public';
 	import { findDevice, checkDevice } from '$lib/mypos.js';
-	import { flash, notify, clearNotice } from '$lib/stores/notice.js';
+	import { notice, notify, clearNotice } from '$lib/stores/notice.svelte.js';
 	import { pb } from '$lib/pb.js';
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
 
@@ -24,11 +24,10 @@
 
 	const LAST_CATEGORY = 'lastCategory';
 
-	let prdts = {};
+	let prdts = $state({});
 
-	let catRecords = [];
-	let categories = [];
-	let selectedCategory = '';
+	let catRecords = $state([]);
+	let selectedCategory = $state('');
 
 	const sortByName = (a, b) => {
 		const nameA = a.name.toUpperCase();
@@ -54,6 +53,7 @@
 		const catName = Object.fromEntries(cats.map((c) => [c.id, c.name]));
 		prdts = Object.fromEntries(cats.map((c) => [c.name, []]));
 		for (const { id, name, variants } of products) {
+			// eslint-disable-next-line svelte/prefer-svelte-reactivity -- scratch map, thrown away before anything renders
 			const byCategory = new Map();
 			for (const v of variants ?? []) {
 				if (!byCategory.has(v.category)) byCategory.set(v.category, []);
@@ -75,14 +75,15 @@
 			[selectedCategory, localStorage.getItem(LAST_CATEGORY)].find(known) ?? cats[0]?.name ?? '';
 	}
 
-	$: if (selectedCategory) localStorage.setItem(LAST_CATEGORY, selectedCategory);
+	$effect(() => {
+		if (selectedCategory) localStorage.setItem(LAST_CATEGORY, selectedCategory);
+	});
 
 	// The rail follows catRecords, so reordering that reorders the menu on screen.
-	$: categories = catRecords.map((c) => c.name);
-	$: selectedCategoryId = catRecords.find((c) => c.name === selectedCategory)?.id ?? '';
+	let categories = $derived(catRecords.map((c) => c.name));
+	let selectedCategoryId = $derived(catRecords.find((c) => c.name === selectedCategory)?.id ?? '');
 
-	async function handleProductSaved(e) {
-		const { categoryId, created } = e.detail;
+	async function handleProductSaved({ categoryId, created }) {
 		showProductForm = false;
 		editProduct = null;
 
@@ -96,36 +97,42 @@
 		}
 	}
 
-	$: items = (prdts[selectedCategory] ?? []).sort(sortByName);
+	let items = $derived([...(prdts[selectedCategory] ?? [])].sort(sortByName));
 
 	// On the sale screen a product shows only its visible variants, and disappears
 	// entirely once none of them are on.
-	$: visibleItems = items
-		.map((item) => ({ ...item, variants: item.variants.filter((v) => v.active !== false) }))
-		.filter((item) => item.variants.length);
+	let visibleItems = $derived(
+		items
+			.map((item) => ({ ...item, variants: item.variants.filter((v) => v.active !== false) }))
+			.filter((item) => item.variants.length)
+	);
 
 	// Edit mode lists one row per variant, which runs to a couple of hundred in a
 	// category like Наливно — too many to thumb through without a filter.
-	let editFilter = '';
+	let editFilter = $state('');
 	/** 'all' | 'shown' | 'hidden' */
-	let editShow = 'all';
+	let editShow = $state('all');
 
-	$: editRows = items.flatMap((item) => item.variants.map((variant) => ({ item, variant })));
-	$: shownRows = editRows.filter(({ item, variant }) => {
-		const q = editFilter.trim().toLowerCase();
-		if (
-			q &&
-			!item.name.toLowerCase().includes(q) &&
-			!String(variant.name).toLowerCase().includes(q)
-		)
-			return false;
-		// Deliberately the saved state, not the pending one: filtering on the tick
-		// itself would make a row vanish the moment you ticked it, which is no use
-		// when the job is working through a list of hidden things.
-		if (editShow === 'shown') return variant.active !== false;
-		if (editShow === 'hidden') return variant.active === false;
-		return true;
-	});
+	let editRows = $derived(
+		items.flatMap((item) => item.variants.map((variant) => ({ item, variant })))
+	);
+	let shownRows = $derived(
+		editRows.filter(({ item, variant }) => {
+			const q = editFilter.trim().toLowerCase();
+			if (
+				q &&
+				!item.name.toLowerCase().includes(q) &&
+				!String(variant.name).toLowerCase().includes(q)
+			)
+				return false;
+			// Deliberately the saved state, not the pending one: filtering on the tick
+			// itself would make a row vanish the moment you ticked it, which is no use
+			// when the job is working through a list of hidden things.
+			if (editShow === 'shown') return variant.active !== false;
+			if (editShow === 'hidden') return variant.active === false;
+			return true;
+		})
+	);
 
 	function addItemToCart(item, variant) {
 		return () => {
@@ -138,15 +145,15 @@
 		};
 	}
 
-	function selectCategory(e) {
-		selectedCategory = e.detail.category;
+	function selectCategory(category) {
+		selectedCategory = category;
 	}
 
 	/**
 	 * Visibility changes waiting behind the tick, keyed product+variant. Only
 	 * differences live here, so cancelling is just throwing the map away.
 	 */
-	let pendingActive = {};
+	let pendingActive = $state({});
 	let orderSnapshot = [];
 
 	const variantKey = (productId, variant) => `${productId}|${variant.name}`;
@@ -158,7 +165,6 @@
 		const next = !isShown(productId, variant);
 		if (next === (variant.active !== false)) delete pendingActive[key];
 		else pendingActive[key] = next;
-		pendingActive = pendingActive;
 	}
 
 	function startEdit() {
@@ -177,8 +183,7 @@
 		editMode = false;
 	}
 
-	function moveCategory(e) {
-		const { from, to } = e.detail;
+	function moveCategory({ from, to }) {
 		if (from === to || to < 0 || to >= catRecords.length) return;
 		const next = [...catRecords];
 		const [moved] = next.splice(from, 1);
@@ -223,7 +228,6 @@
 					slice.variants = variants.filter((v) => slice.variants.some((o) => o.name === v.name));
 				}
 			}
-			prdts = prdts;
 			pendingActive = {};
 		} catch (error) {
 			console.error(error);
@@ -260,23 +264,22 @@
 		}
 
 		delete prdts[cat.name];
-		prdts = prdts;
 		catRecords = catRecords.filter((c) => c.id !== cat.id);
 		orderSnapshot = orderSnapshot.filter((id) => id !== cat.id);
 		selectedCategory = catRecords[0]?.name ?? '';
 	}
 
-	let editMode = false;
-	let showProductForm = false;
-	let showSettings = false;
+	let editMode = $state(false);
+	let showProductForm = $state(false);
+	let showSettings = $state(false);
 	/** Product being edited, or null when the form is adding a new one. */
-	let editProduct = null;
+	let editProduct = $state(null);
 
 	/** Why the device cannot sell, or null. Starts clear so a good one never flashes red. */
-	let deviceFault = null;
+	let deviceFault = $state(null);
 	const refreshDevice = async () => (deviceFault = await checkDevice());
 
-	$: banner = $flash ?? (deviceFault ? { text: deviceFault, tone: 'bad' } : null);
+	let banner = $derived(notice.flash ?? (deviceFault ? { text: deviceFault, tone: 'bad' } : null));
 
 	onMount(() => {
 		localStorage.getItem('myposUrl') || localStorage.setItem('myposUrl', env.PUBLIC_POS_URL);
@@ -308,8 +311,8 @@
 			{categories}
 			{selectedCategory}
 			{editMode}
-			on:select={selectCategory}
-			on:move={moveCategory}
+			onselect={selectCategory}
+			onmove={moveCategory}
 		/>
 
 		<div class="mt-auto pt-6">
@@ -342,14 +345,14 @@
 							? 'bg-[color:var(--amber)]'
 							: 'bg-[color:var(--danger)]'}"
 						aria-hidden="true"
-					/>
+					></span>
 					<span class="truncate">{banner.text}</span>
-					{#if $flash}
+					{#if notice.flash}
 						<button
 							class="-mr-1 shrink-0 px-1 text-base leading-none opacity-70 hover:opacity-100"
 							aria-label="Скрий съобщението"
 							title="Скрий съобщението"
-							on:click={clearNotice}>×</button
+							onclick={clearNotice}>×</button
 						>
 					{/if}
 				</span>
@@ -358,21 +361,21 @@
 			{#if editMode}
 				<span class="eyebrow hidden sm:block">Подредба и видимост</span>
 				<IconButton
-					on:click={deleteCategory}
+					onclick={deleteCategory}
 					class={items.length ? '' : 'touch-danger'}
 					aria-label="Изтрий категорията"
 					title="Изтрий категорията"
 				>
 					<Trash />
 				</IconButton>
-				<IconButton on:click={() => (showProductForm = true)} aria-label="Добави нов продукт">
+				<IconButton onclick={() => (showProductForm = true)} aria-label="Добави нов продукт">
 					<Plus />
 				</IconButton>
-				<IconButton on:click={cancelEdit} class="touch-danger" aria-label="Откажи промените">
+				<IconButton onclick={cancelEdit} class="touch-danger" aria-label="Откажи промените">
 					<X />
 				</IconButton>
 				<IconButton
-					on:click={handleConfirmEdit}
+					onclick={handleConfirmEdit}
 					class="touch-accent"
 					aria-label="Запази промените"
 					title="Запази промените"
@@ -380,10 +383,10 @@
 					<Check />
 				</IconButton>
 			{:else}
-				<IconButton on:click={() => (showSettings = true)} aria-label="Настройки">
+				<IconButton onclick={() => (showSettings = true)} aria-label="Настройки">
 					<Cog />
 				</IconButton>
-				<IconButton on:click={startEdit} aria-label="Редактирай менюто">
+				<IconButton onclick={startEdit} aria-label="Редактирай менюто">
 					<List />
 				</IconButton>
 			{/if}
@@ -402,20 +405,20 @@
 						class="touch h-12 min-h-0 w-12 shrink-0 text-muted"
 						aria-label="Изчисти търсенето"
 						title="Изчисти търсенето"
-						on:click={() => (editFilter = '')}
+						onclick={() => (editFilter = '')}
 					>
 						<X />
 					</button>
 				{/if}
 
 				<div class="flex shrink-0 gap-1">
-					{#each [['all', 'Всички'], ['shown', 'Показани'], ['hidden', 'Скрити']] as [value, label]}
+					{#each [['all', 'Всички'], ['shown', 'Показани'], ['hidden', 'Скрити']] as [value, label] (value)}
 						<button
 							class="touch h-12 min-h-0 px-3 text-sm {editShow === value
 								? 'border-amber-dim text-amber'
 								: 'text-muted'}"
 							aria-pressed={editShow === value}
-							on:click={() => (editShow = value)}
+							onclick={() => (editShow = value)}
 						>
 							{label}
 						</button>
@@ -453,7 +456,7 @@
 								type="checkbox"
 								class="h-5 w-5 accent-[color:var(--amber)]"
 								checked={isShown(item.id, variant)}
-								on:change={() => toggleVariant(item.id, variant)}
+								onchange={() => toggleVariant(item.id, variant)}
 							/>
 							<span class="display truncate text-lg">{item.name}</span>
 							{#if variant.name !== 'default'}
@@ -465,7 +468,7 @@
 						     given, so handing it one category's worth would delete the rest. -->
 						<IconButton
 							aria-label="Редактирай „{item.name}“"
-							on:click={() => {
+							onclick={() => {
 								editProduct = { ...item, variants: item.all };
 								showProductForm = true;
 							}}
@@ -481,7 +484,7 @@
 					</p>
 				{/each}
 			{:else}
-				{#each visibleItems as item, i}
+				{#each visibleItems as item, i (item.id)}
 					<Item {item} alt={i % 2 === 1} handleClick={addItemToCart} />
 				{:else}
 					<p class="mt-16 text-center text-muted">Няма продукти в тази категория.</p>
@@ -500,7 +503,7 @@
 	<!-- The address can change in there, so re-check rather than leave the warning
 	     up for another half minute. -->
 	<SettingsDialog
-		on:close={() => {
+		onclose={() => {
 			showSettings = false;
 			refreshDevice();
 		}}
@@ -512,8 +515,8 @@
 		categories={catRecords}
 		categoryId={editProduct?.category ?? selectedCategoryId}
 		product={editProduct}
-		on:saved={handleProductSaved}
-		on:close={() => {
+		onsaved={handleProductSaved}
+		onclose={() => {
 			showProductForm = false;
 			editProduct = null;
 		}}

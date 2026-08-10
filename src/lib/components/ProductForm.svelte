@@ -1,40 +1,48 @@
 <script>
+	import { untrack } from 'svelte';
 	import { pb } from '$lib/pb.js';
-	import { createEventDispatcher } from 'svelte';
 	import X from '$lib/icons/X.svelte';
 	import Trash from '$lib/icons/Trash.svelte';
 	import ChevronUp from '$lib/icons/ChevronUp.svelte';
 	import ChevronDown from '$lib/icons/ChevronDown.svelte';
 
-	const dispatch = createEventDispatcher();
-
-	/** @type {{id: string, name: string, sort?: number}[]} */
-	export let categories = [];
-	/** Category the till is showing — where a new variant starts out. */
-	export let categoryId = '';
-	/** Existing product to edit. Null means this is a new one. */
-	export let product = null;
+	/**
+	 * @type {{
+	 *   categories?: {id: string, name: string, sort?: number}[],
+	 *   categoryId?: string,
+	 *   product?: {id: string, name: string, variants: any[]} | null,
+	 *   onsaved: (detail: {record: any, categoryId: string|null, created: boolean}) => void,
+	 *   onclose: () => void
+	 * }}
+	 */
+	let { categories = [], categoryId = '', product = null, onsaved, onclose } = $props();
 
 	const NEW_CATEGORY = '__new';
-	const editing = !!product;
+	const editing = untrack(() => !!product);
 
-	let name = product?.name ?? '';
-	let newCategory = '';
+	let name = $state(untrack(() => product?.name ?? ''));
+	let newCategory = $state('');
 	// 'default' is how an only-one-way-to-buy-it product is stored; staff see a
 	// blank box rather than the word.
-	let variants = product?.variants?.length
-		? product.variants.map((v) => ({
-				name: v.name === 'default' ? '' : v.name,
-				price: String(v.price),
-				category: v.category ?? categoryId,
-				active: v.active !== false
-		  }))
-		: [{ name: '', price: '', category: categoryId, active: true }];
-	let error = '';
-	let busy = false;
+	let variants = $state(
+		untrack(() =>
+			product?.variants?.length
+				? product.variants.map((v) => ({
+						name: v.name === 'default' ? '' : v.name,
+						price: String(v.price),
+						category: v.category ?? categoryId,
+						active: v.active !== false
+					}))
+				: [{ name: '', price: '', category: categoryId, active: true }]
+		)
+	);
+	let error = $state('');
+	let busy = $state(false);
 
-	$: addingCategory = variants.some((v) => v.category === NEW_CATEGORY);
-	$: byId = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+	let addedCategories = $state([]);
+	let allCategories = $derived([...categories, ...addedCategories]);
+	let addingCategory = $derived(variants.some((v) => v.category === NEW_CATEGORY));
+	let byId = $derived(Object.fromEntries(allCategories.map((c) => [c.id, c.name])));
 
 	// Staff type on a numeric keypad where the decimal key may be a comma.
 	const toPrice = (raw) => Number(String(raw).replace(',', '.').trim());
@@ -79,7 +87,7 @@
 		if (addingCategory && !newCategory.trim()) return (error = 'Въведи име на новата категория.');
 		if (
 			addingCategory &&
-			categories.some((c) => c.name.toLowerCase() === newCategory.trim().toLowerCase())
+			allCategories.some((c) => c.name.toLowerCase() === newCategory.trim().toLowerCase())
 		)
 			return (error = 'Вече има категория с това име.');
 		if (blank) return (error = 'Всеки ред иска цена. Празен ред се маха с кошчето.');
@@ -90,13 +98,13 @@
 
 		// Nothing to write, and an unchanged save would still land in the audit log.
 		if (editing && name.trim() === product.name && sameVariants(clean, product.variants)) {
-			return dispatch('close');
+			return onclose();
 		}
 
 		busy = true;
 		try {
 			if (addingCategory) {
-				const sort = Math.max(0, ...categories.map((c) => c.sort ?? 0)) + 1;
+				const sort = Math.max(0, ...allCategories.map((c) => c.sort ?? 0)) + 1;
 				const created = await pb
 					.collection('categories')
 					.create({ name: newCategory.trim(), sort });
@@ -105,7 +113,7 @@
 				// second on retry.
 				for (const v of clean) if (v.category === NEW_CATEGORY) v.category = created.id;
 				for (const v of variants) if (v.category === NEW_CATEGORY) v.category = created.id;
-				categories = [...categories, created];
+				addedCategories.push(created);
 				newCategory = '';
 			}
 
@@ -114,7 +122,7 @@
 				? await pb.collection('products').update(product.id, fields)
 				: await pb.collection('products').create(fields);
 
-			dispatch('saved', { record, categoryId: clean[0].category, created: !editing });
+			onsaved({ record, categoryId: clean[0].category, created: !editing });
 		} catch (e) {
 			console.error(e);
 			error = `Не беше запазено. ${e.message ?? ''}`;
@@ -138,7 +146,7 @@
 		busy = true;
 		try {
 			await pb.collection('products').delete(product.id);
-			dispatch('saved', { record: null, categoryId: null, created: false });
+			onsaved({ record: null, categoryId: null, created: false });
 		} catch (e) {
 			console.error(e);
 			error = `Не беше изтрит. ${e.message ?? ''}`;
@@ -153,12 +161,12 @@
 	}
 </script>
 
-<svelte:window on:keydown={(e) => e.key === 'Escape' && dispatch('close')} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
 	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
-	on:click|self={() => dispatch('close')}
+	role="presentation"
+	onclick={(e) => e.target === e.currentTarget && onclose()}
 >
 	<!-- Only the variant list scrolls. A product with a few variants used to push
 	     Запази off the bottom of a 1366x768 till. -->
@@ -171,17 +179,16 @@
 				class="touch h-11 min-h-0 w-11 text-muted"
 				aria-label="Затвори"
 				title="Затвори"
-				on:click={() => dispatch('close')}
+				onclick={() => onclose()}
 			>
 				<X />
 			</button>
 		</header>
 
-		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-		<div class="min-h-0 flex-1 overflow-y-auto px-5 py-4" on:input={() => (error = '')}>
+		<div class="min-h-0 flex-1 overflow-y-auto px-5 py-4" oninput={() => (error = '')}>
 			<label class="mb-5 block">
 				<span class="eyebrow mb-1 block">Име</span>
-				<!-- svelte-ignore a11y-autofocus -->
+				<!-- svelte-ignore a11y_autofocus -->
 				<input
 					class="h-14 w-full rounded-[3px] border border-rule bg-raised px-4 text-lg"
 					bind:value={name}
@@ -191,7 +198,7 @@
 			</label>
 
 			<div class="eyebrow mb-2">Варианти, цени и категории</div>
-			{#each variants as variant, i}
+			{#each variants as variant, i (i)}
 				<div class="mb-2 rounded-[3px] border border-rule p-2">
 					<div class="mb-2 flex items-stretch gap-2">
 						<input
@@ -211,7 +218,7 @@
 								aria-label="Премести реда нагоре"
 								title="Премести реда нагоре"
 								disabled={i === 0}
-								on:click={() => moveVariant(i, -1)}
+								onclick={() => moveVariant(i, -1)}
 							>
 								<ChevronUp />
 							</button>
@@ -220,7 +227,7 @@
 								aria-label="Премести реда надолу"
 								title="Премести реда надолу"
 								disabled={i === variants.length - 1}
-								on:click={() => moveVariant(i, 1)}
+								onclick={() => moveVariant(i, 1)}
 							>
 								<ChevronDown />
 							</button>
@@ -230,7 +237,7 @@
 							aria-label="Премахни този вариант"
 							title="Премахни този вариант"
 							disabled={variants.length === 1}
-							on:click={() => removeVariant(i)}
+							onclick={() => removeVariant(i)}
 						>
 							<Trash />
 						</button>
@@ -242,7 +249,7 @@
 							bind:value={variant.category}
 							aria-label="Категория за този вариант"
 						>
-							{#each categories as category}
+							{#each allCategories as category (category.id)}
 								<option value={category.id}>{category.name}</option>
 							{/each}
 							<option value={NEW_CATEGORY}>+ Нова категория…</option>
@@ -267,7 +274,7 @@
 				/>
 			{/if}
 
-			<button class="touch mt-1 h-12 w-full text-sm text-muted" on:click={addVariant}>
+			<button class="touch mt-1 h-12 w-full text-sm text-muted" onclick={addVariant}>
 				+ Още един вариант
 			</button>
 
@@ -294,14 +301,14 @@
 					aria-label="Изтрий продукта"
 					title="Изтрий продукта"
 					disabled={busy}
-					on:click={remove}
+					onclick={remove}
 				>
 					<Trash />
 				</button>
 			{/if}
 			<div class="ml-auto grid flex-1 grid-cols-2 gap-2">
-				<button class="touch h-14" on:click={() => dispatch('close')}>Откажи</button>
-				<button class="touch touch-accent h-14 text-lg" disabled={busy} on:click={save}>
+				<button class="touch h-14" onclick={() => onclose()}>Откажи</button>
+				<button class="touch touch-accent h-14 text-lg" disabled={busy} onclick={save}>
 					{busy ? 'Запазвам…' : 'Запази'}
 				</button>
 			</div>

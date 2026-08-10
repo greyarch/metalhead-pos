@@ -1,12 +1,14 @@
 <script>
-	import '../app.postcss';
+	import '../app.css';
 
-	import { authed } from '$lib/pb.js';
-	import Login from '../lib/components/Login.svelte';
+	import { auth } from '$lib/stores/auth.svelte.js';
+	import Login from '$lib/components/Login.svelte';
+
+	let { children } = $props();
 </script>
 
-{#if $authed}
-	<slot />
+{#if auth.ok}
+	{@render children()}
 {:else}
 	<Login />
 {/if}

@@ -1,20 +1,15 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
 	import Grip from '$lib/icons/Grip.svelte';
 
-	const dispatch = createEventDispatcher();
-
-	export let categories = [];
-	export let selectedCategory = '';
-	/** In edit mode the rail can be reordered by dragging. */
-	export let editMode = false;
+	/** `editMode`: the rail can be reordered by dragging. */
+	let { categories = [], selectedCategory = '', editMode = false, onselect, onmove } = $props();
 
 	const GAP = 4; // matches gap-1 below
 	const THRESHOLD = 8; // px before a press counts as a drag rather than a tap
 
-	let rows = [];
-	let dragIndex = -1;
-	let dragging = false;
+	let rows = $state([]);
+	let dragIndex = $state(-1);
+	let dragging = $state(false);
 	let startY = 0;
 	let rowHeight = 0;
 	// A drag ends in a click event too; this stops that click selecting a category.
@@ -43,7 +38,7 @@
 		const to = Math.max(0, Math.min(categories.length - 1, dragIndex + steps));
 		if (to === dragIndex) return;
 
-		dispatch('move', { from: dragIndex, to });
+		onmove?.({ from: dragIndex, to });
 		// Rebase so the next step is measured from the row's new home.
 		startY += (to - dragIndex) * rowHeight;
 		dragIndex = to;
@@ -60,7 +55,7 @@
 			justDragged = false;
 			return;
 		}
-		dispatch('select', { category });
+		onselect?.(category);
 	}
 
 	// Dragging is mouse and touch only, so keep a keyboard route to the same thing.
@@ -69,7 +64,7 @@
 		const to = e.key === 'ArrowUp' ? i - 1 : e.key === 'ArrowDown' ? i + 1 : -1;
 		if (to < 0 || to >= categories.length) return;
 		e.preventDefault();
-		dispatch('move', { from: i, to });
+		onmove?.({ from: i, to });
 	}
 </script>
 
@@ -83,12 +78,12 @@
 				{dragging && dragIndex === i ? 'is-dragging' : ''}"
 			aria-current={selectedCategory === category}
 			title={editMode ? 'Влачи, за да преместиш категорията' : category}
-			on:pointerdown={(e) => down(e, i)}
-			on:pointermove={move}
-			on:pointerup={up}
-			on:pointercancel={up}
-			on:keydown={(e) => key(e, i)}
-			on:click={() => select(category)}
+			onpointerdown={(e) => down(e, i)}
+			onpointermove={move}
+			onpointerup={up}
+			onpointercancel={up}
+			onkeydown={(e) => key(e, i)}
+			onclick={() => select(category)}
 		>
 			<span class="flex-1 text-left">{category}</span>
 			{#if editMode}

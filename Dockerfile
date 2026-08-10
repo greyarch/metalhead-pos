@@ -15,7 +15,7 @@ RUN npm run build
 
 # --------
 
-FROM alpine:3.21
+FROM alpine:3.24
 
 ARG PB_VERSION=0.39.10
 

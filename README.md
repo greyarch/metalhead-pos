@@ -10,15 +10,15 @@ hit in `localStorage`.
 
 ## Data
 
-| Collection     | Notes                                                        |
-| -------------- | ------------------------------------------------------------ |
-| `users`        | till operators, auth collection                              |
-| `categories`   | sidebar, ordered by `sort` then `name`                       |
+| Collection     | Notes                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `users`        | till operators, auth collection                                                                                          |
+| `categories`   | sidebar, ordered by `sort` then `name`                                                                                   |
 | `products`     | `variants` is JSON: `[{ "name": "0.5", "price": 6 }]`; staff add these from the till, and hide them with the list button |
-| `orders`       | `payment_type`: `cash` \| `card` \| `register`               |
-| `order_items`  | snapshots name/variant/price — editing a product never rewrites past sales |
-| `today_totals` | view collection, SQL sums for today                          |
-| `audit`        | who changed what, written by a hook — see below               |
+| `orders`       | `payment_type`: `cash` \| `card` \| `register`                                                                           |
+| `order_items`  | snapshots name/variant/price — editing a product never rewrites past sales                                               |
+| `today_totals` | view collection, SQL sums for today                                                                                      |
+| `audit`        | who changed what, written by a hook — see below                                                                          |
 
 Schema lives in [pb_migrations/](pb_migrations/) as one snapshot, applied on
 startup. Editing collections in the admin UI appends further migrations here —
@@ -96,7 +96,25 @@ cp .env.example .env.local
 npm run dev
 ```
 
+`npm run check` type-checks the Svelte, `npm run lint` runs prettier and eslint.
 Add categories, products and till users in the admin UI at http://127.0.0.1:8090/\_/.
+
+Styling is Tailwind 4 through [@tailwindcss/vite](vite.config.js) — no PostCSS
+step and no `tailwind.config`. The palette and the two typefaces are declared in
+the `@theme` block at the top of [src/app.css](src/app.css).
+
+## Reactive state
+
+Svelte 5 runes. Shared state lives in `.svelte.js` modules under
+[src/lib/stores/](src/lib/stores/) — the folder name is a leftover, there are no
+Svelte stores left. Each exports a plain object or class instance:
+`cart.items`, `settings.showCalcByDefault`, `notice.flash`, `auth.ok`. Read them
+directly, no `$` prefix, no `subscribe`.
+
+The Svelte MCP server and the official Svelte skills are wired up in
+[.mcp.json](.mcp.json) and [.claude/skills/](.claude/skills/), so an agent
+working here gets Svelte 5 documentation on demand rather than guessing from
+Svelte 4 habits.
 
 ## Deploying
 

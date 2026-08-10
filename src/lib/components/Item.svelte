@@ -1,8 +1,6 @@
 <script>
-	export let item;
-	export let handleClick;
-	/** Every other row sits on a lighter band, so the eye keeps its place. */
-	export let alt = false;
+	/** `alt`: every other row sits on a lighter band, so the eye keeps its place. */
+	let { item, handleClick, alt = false } = $props();
 
 	const money = (n) => `€${Number(n).toFixed(2)}`;
 </script>
@@ -15,10 +13,10 @@
 		<h3 class="display flex-1 text-xl leading-tight">{item.name}</h3>
 
 		<div class="flex flex-wrap justify-end gap-2">
-			{#each item.variants as variant}
+			{#each item.variants as variant (variant.name)}
 				<button
 					class="touch w-[7.5rem] flex-col gap-0.5 leading-none"
-					on:click={handleClick(item, variant)}
+					onclick={handleClick(item, variant)}
 				>
 					{#if variant.name !== 'default'}
 						<span class="text-[0.7rem] uppercase tracking-widest text-amber-muted"

@@ -1,6 +1,6 @@
 <script>
 	import { cashIn, cashOut } from '$lib/mypos.js';
-	import { notify } from '$lib/stores/notice.js';
+	import { notify } from '$lib/stores/notice.svelte.js';
 
 	// Rare and consequential (each prints on the fiscal device), so they sit at the
 	// bottom of the rail, smaller and quieter than anything used during a sale.
@@ -25,10 +25,10 @@
 
 <div class="eyebrow mb-3 px-1">Каса</div>
 <div class="flex flex-col gap-3">
-	{#each actions as { label, run: action }}
+	{#each actions as { label, run: action } (label)}
 		<button
 			class="touch min-h-[56px] justify-start px-4 text-base text-muted hover:text-[color:var(--text)]"
-			on:click={() => run(label, action)}
+			onclick={() => run(label, action)}
 		>
 			{label}
 		</button>

@@ -43,8 +43,8 @@ async function checkService(url, timeout) {
 		return true;
 	} catch (error) {
 		clearTimeout(timeoutId);
-		
-        // Check error types
+
+		// Check error types
 		if (error.name === 'AbortError') {
 			throw error; // Timeout - service not active
 		}

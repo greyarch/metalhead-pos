@@ -1,13 +1,13 @@
 <script>
-	import cart from '$lib/stores/cart.js';
+	import { cart } from '$lib/stores/cart.svelte.js';
 
-	let input = '';
-	$: result = Number(input) - $cart.total;
-	$: short = Number(input) > 0 && result < 0;
+	let input = $state('');
+	let result = $derived(Number(input) - cart.total);
+	let short = $derived(Number(input) > 0 && result < 0);
 
 	function handleClick(value) {
 		if (value === 'C') {
-			input = 0;
+			input = '';
 		} else {
 			input ? (input += value) : (input = value);
 		}
@@ -37,13 +37,13 @@
 	</div>
 
 	<div class="grid grid-cols-3 gap-1.5">
-		{#each ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', 'C'] as button}
+		{#each ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', 'C'] as button (button)}
 			<!-- C is the only key here that is not its own explanation -->
 			<button
 				class="touch min-h-[48px] text-lg {button === 'C' ? 'touch-danger text-muted' : ''}"
 				aria-label={button === 'C' ? 'Изчисти сумата' : button}
 				title={button === 'C' ? 'Изчисти сумата' : button}
-				on:click={() => handleClick(button)}>{button}</button
+				onclick={() => handleClick(button)}>{button}</button
 			>
 		{/each}
 	</div>

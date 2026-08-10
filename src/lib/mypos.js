@@ -69,9 +69,12 @@ export async function mypos(payload) {
 		});
 	} catch (e) {
 		// A browser network failure reads as "Failed to fetch", which tells the bar
-		// staff nothing. The address is the useful part — it is usually stale.
+		// staff nothing. The address is the useful part — it is usually stale. The
+		// original goes on `cause` so the console still has the real reason.
 		console.error(e);
-		throw new Error(`Устройството на ${myposUrl} не отговаря. Провери адреса в настройките.`);
+		throw new Error(`Устройството на ${myposUrl} не отговаря. Провери адреса в настройките.`, {
+			cause: e
+		});
 	}
 
 	const posResult = await posRes.json();
@@ -135,11 +138,11 @@ function cashOp(operation, amount) {
 	};
 }
 
-export async function cashIn(amount) {
+export async function cashIn() {
 	return await mypos(cashOp('CashIn', 100));
 }
 
-export async function cashOut(amount) {
+export async function cashOut() {
 	return await mypos(cashOp('CashOut', 100));
 }
 

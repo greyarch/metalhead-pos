@@ -1,22 +1,22 @@
 <script>
-	import cart from '$lib/stores/cart.js';
-	import { stats } from '$lib/stores/stats.js';
+	import { cart } from '$lib/stores/cart.svelte.js';
 	import Trash from '$lib/icons/Trash.svelte';
 	import { pb } from '$lib/pb.js';
 	import { mypos, toReceipt } from '$lib/mypos.js';
 	import Calc from '$lib/components/Calc.svelte';
 	import { fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
-	import { tweened } from 'svelte/motion';
+	import { Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
-	import { showCalcByDefault, showRegisterButton } from '$lib/stores/settings.js';
-	import { notify } from '$lib/stores/notice.js';
+	import { settings } from '$lib/stores/settings.svelte.js';
+	import { notify } from '$lib/stores/notice.svelte.js';
 
+	/** Takings so far today, for the corner of the header. */
+	let todayTotal = $state(0);
 	updateStats();
 
 	// The total counts up rather than snapping, so a mis-tap is visible as movement.
-	const shownTotal = tweened(0, { duration: 220, easing: cubicOut });
-	$: shownTotal.set($cart.total);
+	const shownTotal = Tween.of(() => cart.total, { duration: 220, easing: cubicOut });
 
 	const money = (n) => `€${Number(n).toFixed(2)}`;
 	const lineLabel = (i) =>
@@ -29,22 +29,22 @@
 		};
 	}
 
-	let busy = false;
+	let busy = $state(false);
 	// Follows the setting (including a change made while this is on screen), but a
 	// manual toggle still wins until the setting itself changes again.
-	let showCalc = false;
-	showCalcByDefault.subscribe((on) => (showCalc = on));
+	let showCalc = $state(false);
+	$effect(() => (showCalc = settings.showCalcByDefault));
 
 	async function submitOrder(orderType) {
 		let order;
 		busy = true;
 		try {
 			order = await pb.collection('orders').create({
-				total_price: $cart.total,
+				total_price: cart.total,
 				payment_type: orderType,
 				created_by: pb.authStore.record?.id
 			});
-			for (const item of $cart.items) {
+			for (const item of cart.items) {
 				await pb.collection('order_items').create({
 					order: order.id,
 					product: item.id,
@@ -56,7 +56,7 @@
 				});
 			}
 			if (orderType !== 'register') {
-				const res = await mypos(toReceipt($cart, orderType));
+				const res = await mypos(toReceipt(cart, orderType));
 				// The device answers "no error" and still may not have printed: paper
 				// out, or a fault it wants retried (printResult, p.20 of the protocol).
 				// The sale is registered either way, so the order stands and the retry
@@ -81,8 +81,7 @@
 	async function updateStats() {
 		try {
 			const today = await pb.collection('today_totals').getFirstListItem('');
-			$stats.todayTotal = today.total;
-			$stats.todayRegister = today.register;
+			todayTotal = today.total;
 		} catch (error) {
 			console.error(error);
 		}
@@ -100,19 +99,19 @@
 	<!-- h-[76px] matches the menu's header so the two rules line up across the screen -->
 	<header class="flex h-[76px] shrink-0 items-center gap-2 border-b border-rule px-4">
 		<h2 class="display flex-1 text-3xl text-amber">Сметка</h2>
-		{#if $cart.items.length}
+		{#if cart.items.length}
 			<button
 				class="touch touch-danger h-11 min-h-0 w-11 text-muted"
 				aria-label="Изчисти сметката"
 				title="Изчисти сметката"
-				on:click={cart.reset}
+				onclick={() => cart.reset()}
 			>
 				<Trash />
 			</button>
 		{:else}
 			<span class="flex items-baseline gap-2 text-base text-muted">
 				Днес
-				<span class="display text-2xl text-[color:var(--text)]">{money($stats.todayTotal)}</span>
+				<span class="display text-2xl text-[color:var(--text)]">{money(todayTotal)}</span>
 			</span>
 		{/if}
 	</header>
@@ -120,7 +119,7 @@
 	<!-- Lines. The change calculator floats in here rather than in the footer, so
 	     nothing tappable ever sits next to the payment buttons. -->
 	<div class="relative min-h-0 flex-1">
-		{#if showCalc && $cart.items.length}
+		{#if showCalc && cart.items.length}
 			<div
 				class="absolute inset-x-3 bottom-3 z-10 rounded-[3px] border border-rule bg-panel shadow-[0_-8px_24px_rgba(0,0,0,0.5)]"
 				transition:fly={{ y: 12, duration: 160 }}
@@ -130,7 +129,7 @@
 		{/if}
 
 		<div class="h-full overflow-y-auto px-4">
-			{#each $cart.items as cartItem (lineKey(cartItem))}
+			{#each cart.items as cartItem (lineKey(cartItem))}
 				<!-- The name gets the full width of the panel: beer names here run long,
 			     and truncating them hid which size had been rung up. -->
 				<div
@@ -145,7 +144,7 @@
 							class="touch touch-danger h-10 min-h-0 w-10 shrink-0 text-muted"
 							aria-label="Премахни реда от сметката"
 							title="Премахни реда от сметката"
-							on:click={removeVariantFromCart(cartItem)}
+							onclick={removeVariantFromCart(cartItem)}
 						>
 							<Trash />
 						</button>
@@ -154,13 +153,13 @@
 							class="touch h-10 min-h-0 w-10 shrink-0 text-lg"
 							aria-label="Едно по-малко"
 							title="Едно по-малко"
-							on:click={() => cart.remove(cartItem)}>−</button
+							onclick={() => cart.remove(cartItem)}>−</button
 						>
 						<input
 							type="number"
 							bind:value={cartItem.quantity}
-							on:input={(e) => cart.update(cartItem, e.target.value)}
-							on:focus={(e) => e.target.select()}
+							oninput={(e) => cart.setQuantity(cartItem, e.currentTarget.value)}
+							onfocus={(e) => e.currentTarget.select()}
 							min="1"
 							aria-label="Количество"
 							class="h-10 w-12 shrink-0 rounded-[3px] border border-rule bg-ink text-center font-semibold"
@@ -169,7 +168,7 @@
 							class="touch h-10 min-h-0 w-10 shrink-0 text-lg"
 							aria-label="Едно повече"
 							title="Едно повече"
-							on:click={() => cart.update(cartItem, cartItem.quantity + 1)}>+</button
+							onclick={() => cart.setQuantity(cartItem, cartItem.quantity + 1)}>+</button
 						>
 
 						<div class="display flex-1 text-right text-lg">
@@ -183,12 +182,12 @@
 
 	<!-- Its own strip under the list: clear of the payment buttons below and of the
 	     clear-the-whole-order bin above, both costly to hit by mistake. -->
-	{#if $cart.items.length}
+	{#if cart.items.length}
 		<div class="shrink-0 border-t border-rule px-4 py-3">
 			<button
 				class="touch h-11 min-h-0 w-full text-xs uppercase tracking-widest
 					{showCalc ? 'border-amber-dim text-amber' : 'text-muted'}"
-				on:click={() => (showCalc = !showCalc)}
+				onclick={() => (showCalc = !showCalc)}
 			>
 				{showCalc ? 'Скрий ресто' : 'Изчисли ресто'}
 			</button>
@@ -202,25 +201,25 @@
 		<div class="flex items-baseline gap-3">
 			<span class="eyebrow shrink-0">Общо</span>
 			<span class="display flex-1 text-right text-5xl leading-none text-amber">
-				{money($shownTotal)}
+				{money(shownTotal.current)}
 			</span>
 		</div>
 
-		{#if $cart.items.length}
+		{#if cart.items.length}
 			<div
-				class="mt-4 grid gap-2 border-t border-rule pt-4 {$showRegisterButton
+				class="mt-4 grid gap-2 border-t border-rule pt-4 {settings.showRegisterButton
 					? 'grid-cols-3'
 					: 'grid-cols-2'}"
 			>
-				<button class="touch touch-accent h-16 text-lg" on:click={handleSubmit('cash')}>
+				<button class="touch touch-accent h-16 text-lg" onclick={handleSubmit('cash')}>
 					В брой
 				</button>
-				<button class="touch touch-accent h-16 text-lg" on:click={handleSubmit('card')}>
+				<button class="touch touch-accent h-16 text-lg" onclick={handleSubmit('card')}>
 					С карта
 				</button>
-				{#if $showRegisterButton}
+				{#if settings.showRegisterButton}
 					<!-- No fiscal receipt for this one — see submitOrder. -->
-					<button class="touch h-16 text-lg" on:click={handleSubmit('register')}>Каса</button>
+					<button class="touch h-16 text-lg" onclick={handleSubmit('register')}>Каса</button>
 				{/if}
 			</div>
 		{:else}
@@ -238,5 +237,6 @@
 	}
 	input[type='number'] {
 		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 </style>

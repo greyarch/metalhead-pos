@@ -1,17 +1,16 @@
 <script>
-	import { createEventDispatcher } from 'svelte';
 	import { findDevice, getDeviceUrl, setDeviceUrl, diagnostic, printAgain } from '$lib/mypos.js';
-	import { showCalcByDefault, showRegisterButton } from '$lib/stores/settings.js';
+	import { settings } from '$lib/stores/settings.svelte.js';
 	import X from '$lib/icons/X.svelte';
 
-	const dispatch = createEventDispatcher();
+	let { onclose } = $props();
 
-	let deviceUrl = getDeviceUrl() ?? '';
+	let deviceUrl = $state(getDeviceUrl() ?? '');
 
 	// One action at a time — the device answers one request at a time anyway.
-	let running = '';
+	let running = $state('');
 	/** @type {{ tone: 'ok' | 'bad', text: string } | null} */
-	let result = null;
+	let result = $state(null);
 
 	async function run(job, task) {
 		running = job;
@@ -66,12 +65,12 @@
 		});
 </script>
 
-<svelte:window on:keydown={(e) => e.key === 'Escape' && dispatch('close')} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
 	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
-	on:click|self={() => dispatch('close')}
+	role="presentation"
+	onclick={(e) => e.target === e.currentTarget && onclose()}
 >
 	<div class="max-h-full w-[34rem] overflow-y-auto border border-rule bg-panel">
 		<header class="flex items-center gap-2 border-b border-rule px-5 py-4">
@@ -80,7 +79,7 @@
 				class="touch h-11 min-h-0 w-11 text-muted"
 				aria-label="Затвори"
 				title="Затвори"
-				on:click={() => dispatch('close')}
+				onclick={() => onclose()}
 			>
 				<X />
 			</button>
@@ -97,24 +96,24 @@
 					aria-label="Адрес на устройството"
 					placeholder="http://192.168.8.104:8080/jsonrpc"
 				/>
-				<button class="touch h-14 w-28 shrink-0" disabled={!!running} on:click={saveUrl}>
+				<button class="touch h-14 w-28 shrink-0" disabled={!!running} onclick={saveUrl}>
 					{running === 'save' ? 'Запазвам…' : 'Запази'}
 				</button>
 			</div>
 
-			<button class="touch touch-accent h-14 w-full text-lg" disabled={!!running} on:click={scan}>
+			<button class="touch touch-accent h-14 w-full text-lg" disabled={!!running} onclick={scan}>
 				{#if running === 'scan'}
-					<span class="spinner mr-3" aria-hidden="true" /> Търся по мрежата…
+					<span class="spinner mr-3" aria-hidden="true"></span> Търся по мрежата…
 				{:else}
 					Търси автоматично
 				{/if}
 			</button>
 
 			<div class="mt-2 grid grid-cols-2 gap-2">
-				<button class="touch h-14" disabled={!!running} on:click={check}>
+				<button class="touch h-14" disabled={!!running} onclick={check}>
 					{running === 'diagnostic' ? 'Изпращам…' : 'Диагностика'}
 				</button>
-				<button class="touch h-14" disabled={!!running} on:click={reprint}>
+				<button class="touch h-14" disabled={!!running} onclick={reprint}>
 					{running === 'reprint' ? 'Печатам…' : 'Ре-печат'}
 				</button>
 			</div>
@@ -137,7 +136,7 @@
 				<input
 					type="checkbox"
 					class="h-5 w-5 accent-[color:var(--amber)]"
-					bind:checked={$showCalcByDefault}
+					bind:checked={settings.showCalcByDefault}
 				/>
 				<span>Показвай калкулатора за ресто</span>
 			</label>
@@ -145,7 +144,7 @@
 				<input
 					type="checkbox"
 					class="h-5 w-5 accent-[color:var(--amber)]"
-					bind:checked={$showRegisterButton}
+					bind:checked={settings.showRegisterButton}
 				/>
 				<span>Показвай бутона „Каса“</span>
 			</label>
@@ -155,7 +154,7 @@
 		</div>
 
 		<footer class="border-t border-rule px-5 py-4">
-			<button class="touch h-14 w-full" on:click={() => dispatch('close')}>Затвори</button>
+			<button class="touch h-14 w-full" onclick={() => onclose()}>Затвори</button>
 		</footer>
 	</div>
 </div>
