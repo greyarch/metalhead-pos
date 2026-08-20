@@ -4,6 +4,8 @@ FROM node:lts-alpine AS builder
 # Only the initial fallback — the app rescans the LAN for the device on every load.
 ARG PUBLIC_POS_URL=""
 ENV PUBLIC_POS_URL=$PUBLIC_POS_URL
+ARG PUBLIC_POS_TIMEOUT_MS=""
+ENV PUBLIC_POS_TIMEOUT_MS=$PUBLIC_POS_TIMEOUT_MS
 
 WORKDIR /app
 

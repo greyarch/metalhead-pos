@@ -4,6 +4,7 @@ services:
       context: ./
       args:
         - PUBLIC_POS_URL=${PUBLIC_POS_URL:-}
+        - PUBLIC_POS_TIMEOUT_MS=${PUBLIC_POS_TIMEOUT_MS:-}
     restart: unless-stopped
     volumes:
       - pb_data:/pb/pb_data

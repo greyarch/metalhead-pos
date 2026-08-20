@@ -1,6 +1,12 @@
 import { findActiveServices } from '$lib/scan.js';
+import { env } from '$env/dynamic/public';
 
 const URL_KEY = 'myposUrl';
+
+// The device is genuinely slow — a Diagnostic measured 14s — and a wedged one can
+// go quiet altogether, which would leave the till spinning. Override per site with
+// PUBLIC_POS_TIMEOUT_MS when a device is slower than this.
+const TIMEOUT_MS = Number(env.PUBLIC_POS_TIMEOUT_MS) || 45000;
 
 /** Address of the fiscal device this till last found on the LAN. */
 export function getDeviceUrl() {
@@ -63,9 +69,7 @@ export async function mypos(payload) {
 		posRes = await fetch(myposUrl, {
 			method: 'POST',
 			body: JSON.stringify(payload),
-			// The device is genuinely slow — a Diagnostic measured 14s — and a wedged
-			// one can go quiet altogether, which would leave the till spinning.
-			signal: AbortSignal.timeout(45000)
+			signal: AbortSignal.timeout(TIMEOUT_MS)
 		});
 	} catch (e) {
 		// A browser network failure reads as "Failed to fetch", which tells the bar
