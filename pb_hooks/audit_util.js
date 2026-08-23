@@ -19,7 +19,9 @@ function snapshot(record) {
 
 function write(e, action, before, after) {
 	try {
-		const log = new Record($app.findCollectionByNameOrId('audit'));
+		// e.app, not $app: inside a hook that is the transaction-scoped instance,
+		// and a write through the parent app would block on its own writer lock.
+		const log = new Record(e.app.findCollectionByNameOrId('audit'));
 		log.set('collection', e.record.collection().name);
 		log.set('record', e.record.id);
 		log.set('action', action);
@@ -29,10 +31,10 @@ function write(e, action, before, after) {
 		}
 		log.set('before', before);
 		log.set('after', after);
-		$app.save(log);
+		e.app.save(log);
 	} catch (err) {
 		// An audit failure must never block a sale or an edit.
-		$app.logger().error('audit write failed', 'action', action, 'error', String(err));
+		e.app.logger().error('audit write failed', 'action', action, 'error', String(err));
 	}
 }
 

@@ -31,7 +31,7 @@ onRecordUpdateRequest(
 		try {
 			before = require(`${__hooks}/audit_util.js`).snapshot(e.record.original());
 		} catch (err) {
-			$app.logger().error('audit before-snapshot failed', 'error', String(err));
+			e.app.logger().error('audit before-snapshot failed', 'error', String(err));
 		}
 
 		e.next();
@@ -49,7 +49,7 @@ onRecordDeleteRequest(
 		try {
 			before = require(`${__hooks}/audit_util.js`).snapshot(e.record);
 		} catch (err) {
-			$app.logger().error('audit before-snapshot failed', 'error', String(err));
+			e.app.logger().error('audit before-snapshot failed', 'error', String(err));
 		}
 
 		e.next();

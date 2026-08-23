@@ -10,15 +10,15 @@ hit in `localStorage`.
 
 ## Data
 
-| Collection     | Notes                                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `users`        | till operators, auth collection                                                                                          |
-| `categories`   | sidebar, ordered by `sort` then `name`                                                                                   |
-| `products`     | `variants` is JSON: `[{ "name": "0.5", "price": 6 }]`; staff add these from the till, and hide them with the list button |
-| `orders`       | `payment_type`: `cash` \| `card` \| `register`                                                                           |
-| `order_items`  | snapshots name/variant/price — editing a product never rewrites past sales                                               |
-| `today_totals` | view collection, SQL sums for today                                                                                      |
-| `audit`        | who changed what, written by a hook — see below                                                                          |
+| Collection      | Notes                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `users`         | till operators, auth collection — signup is closed, a superuser creates them in the admin UI                             |
+| `categories`    | sidebar, ordered by `sort` then `name`                                                                                   |
+| `products`      | `variants` is JSON: `[{ "name": "0.5", "price": 6 }]`; staff add these from the till, and hide them with the list button |
+| `orders`        | `payment_type`: `cash` \| `card` \| `register`                                                                           |
+| `order_items`   | snapshots name/variant/price — editing a product never rewrites past sales                                               |
+| `period_totals` | view collection, SQL sums for today, this week, this month and this year                                                 |
+| `audit`         | who changed what, written by a hook — see below                                                                          |
 
 Schema lives in [pb_migrations/](pb_migrations/) as one snapshot, applied on
 startup. Editing collections in the admin UI appends further migrations here —
@@ -132,3 +132,21 @@ docker compose exec metalhead-pos pocketbase superuser upsert you@example.com <p
 ```
 
 `pb_data` is a named volume. It is the only thing worth backing up.
+
+## Hardening
+
+[pb_migrations/1787488100_harden.js](pb_migrations/1787488100_harden.js) carries the
+settings that otherwise only ever existed in one admin UI and so came up wrong on a
+fresh deploy: signup closed, the rate limiter on, a nightly backup, the batch
+endpoint on (the till submits an order and its lines in one transaction).
+
+Two things it deliberately leaves alone:
+
+- Backups land in `pb_data/backups`, on the same disk as the database they protect.
+  Three are kept. Copy them off the box if the box itself is what you are afraid of.
+- The rate limiter counts per client IP, and behind
+  [docker-compose.proxy.yml](docker-compose.proxy.yml) every request arrives from the
+  proxy, so the whole world shares one bucket. Fixing that means telling PocketBase
+  which forwarded-for header to trust (Settings → Application → trusted proxy), and
+  trusting a header that no proxy is actually setting lets a client forge its own IP.
+  So it is set by hand, once, when you know what is in front.

@@ -35,18 +35,32 @@
 	let showCalc = $state(false);
 	$effect(() => (showCalc = settings.showCalcByDefault));
 
+	// PocketBase ids are exactly 15 chars of [a-z0-9]. getRandomValues rather than
+	// randomUUID: the till is opened over plain http on the LAN often enough, and
+	// randomUUID is missing outside a secure context.
+	const newOrderId = () =>
+		Array.from(crypto.getRandomValues(new Uint8Array(15)), (b) =>
+			'abcdefghijklmnopqrstuvwxyz0123456789'.charAt(b % 36)
+		).join('');
+
 	async function submitOrder(orderType) {
-		let order;
+		let order = null;
 		busy = true;
 		try {
-			order = await pb.collection('orders').create({
+			// One request, one transaction. An order with half its lines, or lines
+			// with no order, is worse than a sale that plainly failed — so the id is
+			// generated here and the lines point at it inside the same batch.
+			const id = newOrderId();
+			const batch = pb.createBatch();
+			batch.collection('orders').create({
+				id,
 				total_price: cart.total,
 				payment_type: orderType,
 				created_by: pb.authStore.record?.id
 			});
 			for (const item of cart.items) {
-				await pb.collection('order_items').create({
-					order: order.id,
+				batch.collection('order_items').create({
+					order: id,
 					product: item.id,
 					// snapshot: editing a product later must not rewrite past sales
 					product_name: item.name,
@@ -55,6 +69,8 @@
 					unit_price: item.variant.price
 				});
 			}
+			await batch.send();
+			order = id;
 			if (orderType !== 'register') {
 				const res = await mypos(toReceipt(cart, orderType));
 				// The device answers "no error" and still may not have printed: paper
@@ -72,7 +88,7 @@
 		} catch (e) {
 			console.error(e);
 			// cascade delete drops the order_items with it
-			if (order) await pb.collection('orders').delete(order.id).catch(console.error);
+			if (order) await pb.collection('orders').delete(order).catch(console.error);
 			notify(`Поръчката не мина. ${e.message ?? e}`);
 		}
 		busy = false;
