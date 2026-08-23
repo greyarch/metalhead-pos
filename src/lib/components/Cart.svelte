@@ -80,7 +80,7 @@
 
 	async function updateStats() {
 		try {
-			const today = await pb.collection('today_totals').getFirstListItem('');
+			const today = await pb.collection('period_totals').getOne('today');
 			todayTotal = today.total;
 		} catch (error) {
 			console.error(error);
