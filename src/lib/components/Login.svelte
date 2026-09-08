@@ -19,9 +19,9 @@
 	};
 </script>
 
-<div class="flex h-screen items-center justify-center bg-ink p-6">
+<div class="flex h-dvh items-center justify-center bg-ink p-4 sm:p-6">
 	<form
-		class="w-[22rem]"
+		class="w-full max-w-[22rem]"
 		onsubmit={(e) => {
 			e.preventDefault();
 			login();

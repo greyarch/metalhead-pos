@@ -11,6 +11,13 @@
 	import { settings } from '$lib/stores/settings.svelte.js';
 	import { notify } from '$lib/stores/notice.svelte.js';
 
+	/**
+	 * Told when the bill is done with — paid off or thrown away. The sheet this
+	 * sits in on a narrow screen closes itself on it; the pane that is always on
+	 * screen passes nothing and carries on.
+	 */
+	let { onfinish = () => {} } = $props();
+
 	/** Takings so far today, for the corner of the header. */
 	let todayTotal = $state(0);
 	updateStats();
@@ -85,6 +92,7 @@
 				}
 			}
 			cart.reset();
+			onfinish();
 		} catch (e) {
 			console.error(e);
 			// cascade delete drops the order_items with it
@@ -120,7 +128,10 @@
 				class="touch touch-danger h-11 min-h-0 w-11 text-muted"
 				aria-label="Изчисти сметката"
 				title="Изчисти сметката"
-				onclick={() => cart.reset()}
+				onclick={() => {
+					cart.reset();
+					onfinish();
+				}}
 			>
 				<Trash />
 			</button>

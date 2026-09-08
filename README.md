@@ -79,7 +79,7 @@ or auditing would block the very operation it is recording.
 
 ## Developing
 
-Grab the PocketBase binary (v0.40.0, matching the [Dockerfile](Dockerfile)) from
+Grab the PocketBase binary (v0.40.3, matching the [Dockerfile](Dockerfile)) from
 https://github.com/pocketbase/pocketbase/releases into the project root, named
 `pb` — it is gitignored. Not `pocketbase`: that name collides with the npm
 package of the same name and vite tries to bundle the binary.

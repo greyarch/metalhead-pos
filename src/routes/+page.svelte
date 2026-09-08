@@ -13,6 +13,8 @@
 	import Pencil from '$lib/icons/Pencil.svelte';
 	import Trash from '$lib/icons/Trash.svelte';
 	import ProductForm from '$lib/components/ProductForm.svelte';
+	import ChevronDown from '$lib/icons/ChevronDown.svelte';
+	import { fly } from 'svelte/transition';
 
 	import { env } from '$env/dynamic/public';
 	import { findDevice, checkDevice } from '$lib/mypos.js';
@@ -21,6 +23,7 @@
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
 
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	const LAST_CATEGORY = 'lastCategory';
 
@@ -147,6 +150,7 @@
 
 	function selectCategory(category) {
 		selectedCategory = category;
+		showRail = false;
 	}
 
 	/**
@@ -271,6 +275,41 @@
 
 	let editMode = $state(false);
 	let showProductForm = $state(false);
+	/** Narrow screens only: below lg the rail is a drawer, below md the bill is a sheet. */
+	let showRail = $state(false);
+	let showCart = $state(false);
+	let cartCount = $derived(cart.items.reduce((n, i) => n + i.quantity, 0));
+	const money = (n) => `€${Number(n).toFixed(2)}`;
+
+	// Which panes fit at this width. Each of the rail and the bill is mounted in
+	// one place only — a second copy parked behind `hidden` would run its own
+	// stats request and sit on its own stale total.
+	const RAIL_FITS = '(min-width: 1024px)'; // lg
+	const BILL_FITS = '(min-width: 768px)'; // md
+	let railFits = $state(browser && window.matchMedia(RAIL_FITS).matches);
+	let billFits = $state(browser && window.matchMedia(BILL_FITS).matches);
+
+	onMount(() => {
+		const watch = (query, set) => {
+			const mq = window.matchMedia(query);
+			const sync = () => set(mq.matches);
+			mq.addEventListener('change', sync);
+			return () => mq.removeEventListener('change', sync);
+		};
+		// Turning a tablet brings the pane itself back, so whatever was standing in
+		// for it goes at that moment rather than being left open underneath it.
+		const stop = [
+			watch(RAIL_FITS, (v) => {
+				railFits = v;
+				if (v) showRail = false;
+			}),
+			watch(BILL_FITS, (v) => {
+				billFits = v;
+				if (v) showCart = false;
+			})
+		];
+		return () => stop.forEach((off) => off());
+	});
 	let showSettings = $state(false);
 	/** Product being edited, or null when the form is adding a new one. */
 	let editProduct = $state(null);
@@ -304,36 +343,64 @@
 	}
 </script>
 
-<div class="flex h-screen w-full bg-ink">
-	<!-- Left rail: what to sell, and the till drawer at the bottom -->
-	<aside class="flex w-52 shrink-0 flex-col border-r border-rule bg-panel p-3">
-		<CategorySidebar
-			{categories}
-			{selectedCategory}
-			{editMode}
-			onselect={selectCategory}
-			onmove={moveCategory}
-		/>
+<!-- Left rail: what to sell, and the till drawer at the bottom. Written once and
+     rendered either in place or in the drawer, so the drag-to-reorder rows and
+     their pointer handlers cannot fork into two versions. -->
+{#snippet rail()}
+	<CategorySidebar
+		{categories}
+		{selectedCategory}
+		{editMode}
+		onselect={selectCategory}
+		onmove={moveCategory}
+	/>
 
-		<div class="mt-auto pt-6">
-			<SettingsSidebar />
-		</div>
-	</aside>
+	<div class="mt-auto pt-6">
+		<SettingsSidebar />
+	</div>
+{/snippet}
+
+<!-- Three panes for as long as three fit. Below lg the rail folds away into a
+     drawer, below md the bill follows into a sheet, and the menu — the thing
+     actually being used — keeps the whole width either way.
+     h-dvh, not h-screen: a phone's address bar must not push the payment
+     buttons under the fold. -->
+<div class="flex h-dvh w-full flex-col bg-ink md:flex-row">
+	{#if railFits}
+		<aside class="flex w-52 shrink-0 flex-col border-r border-rule bg-panel p-3">
+			{@render rail()}
+		</aside>
+	{/if}
 
 	<!-- Centre: the products. Takes whatever is left over, so the rail and the bill
 	     keep their widths and the space goes to the menu rather than beside it. -->
 	<!-- h-[76px] here and on the bill's header so both rules land on the same line -->
-	<main class="flex min-w-0 flex-1 flex-col px-5 pb-5">
-		<header class="mb-3 flex h-[76px] shrink-0 items-center gap-3 border-b border-rule">
-			<h2 class="display min-w-0 flex-1 truncate text-3xl text-amber">{selectedCategory}</h2>
+	<main class="flex min-h-0 min-w-0 flex-1 flex-col px-3 pb-3 sm:px-5 sm:pb-5">
+		<header
+			class="mb-3 flex shrink-0 flex-wrap items-center gap-2 border-b border-rule py-3
+				sm:gap-3 md:h-[76px] md:flex-nowrap md:py-0"
+		>
+			<h2 class="display min-w-0 flex-1 truncate text-2xl text-amber sm:text-3xl">
+				{selectedCategory}
+			</h2>
+
+			<!-- The way back to the rail once it is a drawer. Next to the category it
+			     changes, not off with the edit actions on the right. -->
+			{#if !railFits}
+				<IconButton onclick={() => (showRail = true)} aria-label="Смени категорията">
+					<ChevronDown />
+				</IconButton>
+			{/if}
 
 			<!-- One strip for everything the till has to say. A message someone raised
 			     wins over the standing device warning, which is still true underneath
 			     and comes back the moment the message is cleared. -->
+			<!-- Below md it takes a line of its own. There is no width to share with
+			     the title and the buttons, and a warning cut to one word says nothing. -->
 			{#if banner}
 				<span
-					class="flex min-w-0 max-w-[34rem] items-center gap-2 border px-3 py-1.5
-						text-xs uppercase tracking-widest
+					class="order-last flex w-full min-w-0 items-center gap-2 border px-3 py-1.5
+						text-xs uppercase tracking-widest md:order-none md:w-auto md:max-w-[34rem]
 						{banner.tone === 'ok'
 						? 'border-amber-dim text-amber'
 						: 'border-[color:var(--danger)] text-[color:var(--danger)]'}"
@@ -393,23 +460,27 @@
 		</header>
 
 		{#if editMode && editRows.length}
-			<div class="mb-3 flex items-center gap-2">
-				<input
-					class="h-12 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-4"
-					bind:value={editFilter}
-					placeholder="Търси по име или размер…"
-					aria-label="Търси в списъка"
-				/>
-				{#if editFilter}
-					<button
-						class="touch h-12 min-h-0 w-12 shrink-0 text-muted"
-						aria-label="Изчисти търсенето"
-						title="Изчисти търсенето"
-						onclick={() => (editFilter = '')}
-					>
-						<X />
-					</button>
-				{/if}
+			<div class="mb-3 flex flex-wrap items-center gap-2">
+				<!-- Field and its clear button stay together on a line of their own until
+				     there is room for them beside the three filters. -->
+				<div class="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:flex-1">
+					<input
+						class="h-12 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-4"
+						bind:value={editFilter}
+						placeholder="Търси по име или размер…"
+						aria-label="Търси в списъка"
+					/>
+					{#if editFilter}
+						<button
+							class="touch h-12 min-h-0 w-12 shrink-0 text-muted"
+							aria-label="Изчисти търсенето"
+							title="Изчисти търсенето"
+							onclick={() => (editFilter = '')}
+						>
+							<X />
+						</button>
+					{/if}
+				</div>
 
 				<div class="flex shrink-0 gap-1">
 					{#each [['all', 'Всички'], ['shown', 'Показани'], ['hidden', 'Скрити']] as [value, label] (value)}
@@ -448,8 +519,11 @@
 				     so each is shown and hidden on its own. -->
 				{#each shownRows as { item, variant } (item.id + '|' + variant.name)}
 					<div class="mb-1 flex items-center gap-1">
+						<!-- min-w-0, or the row cannot shrink below the name it holds and pushes
+						     the pencil off the right edge of a narrow screen. -->
 						<label
-							class="touch min-h-[52px] flex-1 cursor-pointer justify-start gap-3 px-4
+							class="touch min-h-[52px] min-w-0 flex-1 cursor-pointer justify-start gap-2 px-3
+									sm:gap-3 sm:px-4
 									{isShown(item.id, variant) ? '' : 'opacity-45'}"
 						>
 							<input
@@ -494,10 +568,84 @@
 	</main>
 
 	<!-- Right: the bill -->
-	<aside class="flex w-[26rem] shrink-0 flex-col border-l border-rule bg-panel">
-		<Cart />
-	</aside>
+	{#if billFits}
+		<aside class="flex w-80 shrink-0 flex-col border-l border-rule bg-panel lg:w-[26rem]">
+			<Cart />
+		</aside>
+	{:else}
+		<!-- Nowhere to stand beside the menu at this width, so the bill moves into a
+		     sheet and this strip is all that is left of it on screen: what is owed,
+		     and the way in. -->
+		<div class="shrink-0 border-t border-rule bg-panel p-3">
+			<button
+				class="touch h-14 min-h-0 w-full justify-between px-4 disabled:opacity-50
+					{cart.items.length ? 'touch-accent' : 'text-muted'}"
+				disabled={!cart.items.length}
+				onclick={() => (showCart = true)}
+			>
+				<span class="text-xs uppercase tracking-widest">
+					Сметка{cartCount ? ` · ${cartCount}` : ''}
+				</span>
+				<span class="display text-2xl leading-none">{money(cart.total)}</span>
+			</button>
+		</div>
+	{/if}
 </div>
+
+<svelte:window
+	onkeydown={(e) => {
+		// The dialogs run their own handler and sit above these, so Escape belongs
+		// to whatever is on top rather than closing the lot at once.
+		if (e.key !== 'Escape' || showSettings || showProductForm) return;
+		showRail = false;
+		showCart = false;
+	}}
+/>
+
+<!-- The rail, once it no longer fits beside the menu. -->
+{#if !railFits && showRail}
+	<div class="fixed inset-0 z-40 flex">
+		<button
+			class="absolute inset-0 bg-black/70"
+			aria-label="Затвори категориите"
+			onclick={() => (showRail = false)}
+		></button>
+		<aside
+			class="relative flex w-64 max-w-[80vw] flex-col overflow-y-auto border-r border-rule bg-panel p-3"
+			transition:fly={{ x: -280, duration: 180 }}
+		>
+			{@render rail()}
+		</aside>
+	</div>
+{/if}
+
+<!-- The bill, likewise. Tall, but short of the full height: the strip of menu
+     left showing says what is underneath and is the way back to it. -->
+{#if !billFits && showCart}
+	<div class="fixed inset-0 z-40 flex flex-col">
+		<button
+			class="absolute inset-0 bg-black/70"
+			aria-label="Затвори сметката"
+			onclick={() => (showCart = false)}
+		></button>
+		<div
+			class="relative mt-auto flex h-[88dvh] flex-col border-t border-rule bg-panel"
+			transition:fly={{ y: 400, duration: 200 }}
+		>
+			<button
+				class="flex h-8 shrink-0 items-center justify-center"
+				aria-label="Затвори сметката"
+				title="Затвори сметката"
+				onclick={() => (showCart = false)}
+			>
+				<span class="h-1 w-10 rounded-full bg-rule"></span>
+			</button>
+			<div class="min-h-0 flex-1">
+				<Cart onfinish={() => (showCart = false)} />
+			</div>
+		</div>
+	</div>
+{/if}
 
 {#if showSettings}
 	<!-- The address can change in there, so re-check rather than leave the warning

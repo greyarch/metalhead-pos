@@ -68,12 +68,12 @@
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6"
 	role="presentation"
 	onclick={(e) => e.target === e.currentTarget && onclose()}
 >
-	<div class="max-h-full w-[34rem] overflow-y-auto border border-rule bg-panel">
-		<header class="flex items-center gap-2 border-b border-rule px-5 py-4">
+	<div class="max-h-full w-full max-w-[34rem] overflow-y-auto border border-rule bg-panel">
+		<header class="flex items-center gap-2 border-b border-rule px-4 py-4 sm:px-5">
 			<h2 class="display flex-1 text-2xl text-amber">Настройки</h2>
 			<button
 				class="touch h-11 min-h-0 w-11 text-muted"
@@ -85,7 +85,7 @@
 			</button>
 		</header>
 
-		<div class="px-5 py-4">
+		<div class="px-4 py-4 sm:px-5">
 			<div class="eyebrow mb-2">Фискално устройство</div>
 			<div class="mb-2 flex items-center gap-2">
 				<input
@@ -153,7 +153,7 @@
 			</p>
 		</div>
 
-		<footer class="border-t border-rule px-5 py-4">
+		<footer class="border-t border-rule px-4 py-4 sm:px-5">
 			<button class="touch h-14 w-full" onclick={() => onclose()}>Затвори</button>
 		</footer>
 	</div>

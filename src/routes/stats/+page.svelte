@@ -33,24 +33,30 @@
 	];
 </script>
 
-<main class="min-h-screen bg-ink p-8">
-	<a href={resolve('/')} class="eyebrow mb-8 inline-block hover:text-[color:var(--text)]"
+<main class="h-screen overflow-y-auto bg-ink p-4 sm:p-6 lg:p-8">
+	<a href={resolve('/')} class="eyebrow mb-6 inline-block hover:text-[color:var(--text)] sm:mb-8"
 		>← Към касата</a
 	>
 
 	{#each PERIODS as { id, label }, i (id)}
 		{@const row = totals[id] ?? EMPTY}
-		<section class={i === 0 ? 'mb-10' : 'mt-10'}>
+		<section class={i === 0 ? 'mb-8 sm:mb-10' : 'mt-8 sm:mt-10'}>
 			<h2 class="eyebrow mb-1">{label}</h2>
-			<p class="display mb-4 leading-none {i === 0 ? 'text-7xl text-amber' : 'text-5xl'}">
+			<p
+				class="display mb-3 leading-none sm:mb-4 {i === 0
+					? 'text-5xl text-amber sm:text-6xl lg:text-7xl'
+					: 'text-4xl sm:text-5xl'}"
+			>
 				{money(row.total)}
 			</p>
 
-			<div class="grid max-w-2xl grid-cols-3 gap-px bg-rule">
+			<div class="grid max-w-2xl grid-cols-1 gap-px bg-rule sm:grid-cols-3">
 				{#each split(row) as { label: cut, value } (cut)}
-					<div class="bg-panel px-5 py-4">
-						<div class="eyebrow mb-1">{cut}</div>
-						<div class="display text-3xl leading-none">{money(value)}</div>
+					<div
+						class="flex items-baseline justify-between gap-3 bg-panel px-4 py-3 sm:block sm:px-5 sm:py-4"
+					>
+						<div class="eyebrow sm:mb-1">{cut}</div>
+						<div class="display text-2xl leading-none sm:text-3xl">{money(value)}</div>
 					</div>
 				{/each}
 			</div>

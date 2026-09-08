@@ -164,14 +164,14 @@
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+	class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6"
 	role="presentation"
 	onclick={(e) => e.target === e.currentTarget && onclose()}
 >
 	<!-- Only the variant list scrolls. A product with a few variants used to push
 	     Запази off the bottom of a 1366x768 till. -->
-	<div class="flex max-h-full w-[40rem] flex-col border border-rule bg-panel">
-		<header class="flex shrink-0 items-center gap-2 border-b border-rule px-5 py-4">
+	<div class="flex max-h-full w-full max-w-[40rem] flex-col border border-rule bg-panel">
+		<header class="flex shrink-0 items-center gap-2 border-b border-rule px-4 py-4 sm:px-5">
 			<h2 class="display flex-1 text-2xl text-amber">
 				{editing ? 'Редакция на продукт' : 'Нов продукт'}
 			</h2>
@@ -185,7 +185,7 @@
 			</button>
 		</header>
 
-		<div class="min-h-0 flex-1 overflow-y-auto px-5 py-4" oninput={() => (error = '')}>
+		<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5" oninput={() => (error = '')}>
 			<label class="mb-5 block">
 				<span class="eyebrow mb-1 block">Име</span>
 				<!-- svelte-ignore a11y_autofocus -->
@@ -243,7 +243,7 @@
 						</button>
 					</div>
 
-					<div class="flex items-stretch gap-2">
+					<div class="flex flex-wrap items-stretch gap-2">
 						<select
 							class="h-12 min-w-0 flex-1 rounded-[3px] border border-rule bg-raised px-3"
 							bind:value={variant.category}
@@ -254,7 +254,9 @@
 							{/each}
 							<option value={NEW_CATEGORY}>+ Нова категория…</option>
 						</select>
-						<label class="touch h-12 min-h-0 w-40 shrink-0 cursor-pointer justify-start gap-2 px-3">
+						<label
+							class="touch h-12 min-h-0 w-full shrink-0 cursor-pointer justify-start gap-2 px-3 sm:w-40"
+						>
 							<input
 								type="checkbox"
 								class="h-5 w-5 accent-[color:var(--amber)]"
@@ -292,7 +294,7 @@
 			{/if}
 		</div>
 
-		<footer class="flex shrink-0 gap-2 border-t border-rule px-5 py-4">
+		<footer class="flex shrink-0 gap-2 border-t border-rule px-4 py-4 sm:px-5">
 			{#if editing}
 				<!-- Off on its own at the far end: the two buttons anyone presses on a
 				     normal edit are together on the right, away from this one. -->
