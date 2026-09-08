@@ -19,7 +19,7 @@ RUN npm run build
 
 FROM alpine:3.24
 
-ARG PB_VERSION=0.40.0
+ARG PB_VERSION=0.40.3
 
 RUN apk add --no-cache ca-certificates unzip wget \
 	&& wget -q -O /tmp/pb.zip "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip" \
