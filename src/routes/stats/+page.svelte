@@ -33,7 +33,11 @@
 	];
 </script>
 
-<main class="h-screen overflow-y-auto bg-ink p-4 sm:p-6 lg:p-8">
+<!-- h-dvh, not h-screen: body is overflow-hidden, so this is the only thing that
+     scrolls, and at 100vh its bottom edge sits under a phone's address bar — the
+     last period's breakdown could be scrolled to but never seen. Extra room at the
+     end so it does not finish flush against the edge either. -->
+<main class="h-dvh overflow-y-auto bg-ink p-4 pb-10 sm:p-6 sm:pb-12 lg:p-8 lg:pb-14">
 	<a href={resolve('/')} class="eyebrow mb-6 inline-block hover:text-[color:var(--text)] sm:mb-8"
 		>← Към касата</a
 	>
